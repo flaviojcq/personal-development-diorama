@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrthographicCamera, Edges } from '@react-three/drei';
 import * as THREE from 'three';
@@ -261,7 +261,7 @@ function Player({ setZone }: { setZone: (z: ZoneType) => void }) {
   const { camera } = useThree();
   const camOffset = new THREE.Vector3(15, 15, 15);
 
-  useFrame((state, delta) => {
+  useFrame((_state, delta) => {
     if (!meshRef.current) return;
 
     let dx = 0;
