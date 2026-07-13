@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrthographicCamera, Edges } from '@react-three/drei';
 import * as THREE from 'three';
@@ -38,7 +38,6 @@ export const OBSTACLES = [
   // Future Room (0, -14)
   { id: 'future_plant_wall', x: 0, y: 1.5, z: -18.5, width: 4, height: 3, depth: 1 },
   { id: 'future_coffee_bar', x: 4.5, y: 1, z: -14, width: 1, height: 2, depth: 4 },
-  { id: 'future_audio_setup', x: 0, y: 0.8, z: -9.5, width: 3, height: 1.6, depth: 1 },
 ];
 
 function inDiagonalCorridor(x: number, z: number) {
@@ -116,13 +115,34 @@ function Block({ position, size, color }: { position: [number, number, number], 
   );
 }
 
-function Room({ position, size, floorColor = "#c29469", hasWalls = false }: { position: [number, number, number], size: [number, number], floorColor?: string, hasWalls?: boolean }) {
+function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", hasWalls = false, isParquet = false }: { position: [number, number, number], size: [number, number], floorColor?: string, wallColor?: string, hasWalls?: boolean, isParquet?: boolean }) {
+  const parquetTexture = useMemo(() => {
+    if (!isParquet) return null;
+    const data = new Uint8Array([
+      180, 105, 59, 255,   200, 134, 87, 255,
+      200, 134, 87, 255,   180, 105, 59, 255,
+    ]);
+    const tex = new THREE.DataTexture(data, 2, 2, THREE.RGBAFormat);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(size[0] / 2, size[1] / 2);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+  }, [isParquet, size[0], size[1]]);
+
   return (
     <group position={position}>
       {/* Floor with thick outlines for pixel art look */}
       <mesh position={[0, -0.25, 0]} receiveShadow>
         <boxGeometry args={[size[0], 0.5, size[1]]} />
-        <meshToonMaterial color={floorColor} />
+        {isParquet ? (
+          <meshToonMaterial map={parquetTexture} />
+        ) : (
+          <meshToonMaterial color={floorColor} />
+        )}
         <Edges color="#000000" scale={1.001} />
       </mesh>
       
@@ -131,14 +151,14 @@ function Room({ position, size, floorColor = "#c29469", hasWalls = false }: { po
           {/* Back-Left Wall (z-axis) */}
           <mesh position={[-size[0]/2 - 0.25, 2, -0.25]} receiveShadow>
             <boxGeometry args={[0.5, 4, size[1] + 0.5]} />
-            <meshToonMaterial color={floorColor} />
+            <meshToonMaterial color={wallColor} />
             <Edges color="#000000" scale={1.001} />
           </mesh>
 
           {/* Back-Right Wall (x-axis) */}
           <mesh position={[-0.25, 2, -size[1]/2 - 0.25]} receiveShadow>
             <boxGeometry args={[size[0] + 0.5, 4, 0.5]} />
-            <meshToonMaterial color={floorColor} />
+            <meshToonMaterial color={wallColor} />
             <Edges color="#000000" scale={1.001} />
           </mesh>
         </>
@@ -215,11 +235,6 @@ function FutureRoom() {
       {/* Coffee Bar (Right Wall) */}
       <Block position={[4.5, 1, 0]} size={[1, 2, 4]} color="#78350f" /> {/* Wood Bar */}
       <Block position={[4.5, 2.2, 0]} size={[0.6, 0.4, 0.6]} color="#94a3b8" /> {/* Espresso Machine */}
-
-      {/* Audio/Guitar Setup (Bottom Wall) */}
-      <Block position={[0, 0.8, 4.5]} size={[3, 1.6, 1]} color="#b45309" /> {/* Wood Table */}
-      <Block position={[0, 1.7, 4.5]} size={[1, 0.1, 1]} color="#1e293b" /> {/* Turntable */}
-      <Block position={[-1, 1.2, 4.2]} size={[0.4, 1.4, 0.4]} color="#d97706" /> {/* Guitar */}
     </group>
   );
 }
@@ -231,7 +246,7 @@ function Apartment() {
       <Room position={[0, 0, 0]} size={[6, 6]} floorColor="#e5e5e5" /> {/* Me Room (Neutral) */}
       <Room position={[-14, 0, 0]} size={[10, 10]} floorColor="#fed7aa" hasWalls={true} /> {/* Past (Warm) */}
       <Room position={[-14, 0, -14]} size={[10, 10]} floorColor="#94a3b8" hasWalls={true} /> {/* Present (Modern) */}
-      <Room position={[0, 0, -14]} size={[10, 10]} floorColor="#bbf7d0" hasWalls={true} /> {/* Future (Nature) */}
+      <Room position={[0, 0, -14]} size={[10, 10]} hasWalls={true} isParquet={true} /> {/* Future (Nature/Warm Parquet) */}
 
       {/* Corridors */}
       <Room position={[-6, 0, 0]} size={[6, 2]} floorColor="#e5e5e5" />
@@ -338,7 +353,7 @@ function App() {
         </div>
       </div>
 
-      <Canvas shadows gl={{ antialias: false }} dpr={0.3}>
+      <Canvas shadows gl={{ antialias: false }} dpr={0.5}>
         <OrthographicCamera makeDefault position={[15, 15, 15]} zoom={40} />
         {/* Slightly brighter ambient light for the cartoon look */}
         <ambientLight intensity={0.6} color="#ffffff" />
