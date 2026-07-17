@@ -1,54 +1,57 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrthographicCamera, Edges } from '@react-three/drei';
+import { OrthographicCamera, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import lightParquetUrl from './assets/light_parquet.jpg';
 import './index.css';
 
 // --- Types & Constants ---
 type ZoneType = 'none' | 'me' | 'past' | 'present' | 'future';
 
 const ZONES = [
-  { id: 'me', x: 0, z: 0, radius: 2.5, title: 'ME (Central Me)', text: "The starting point and central axis. Choose your path to explore your narrative.", theme: 'theme-me' },
-  { id: 'past', x: -14, z: 0, radius: 4.5, title: 'Who I Was', text: "Childhood drawings, iconic toys, and a warm, safe atmosphere.", theme: 'theme-past' },
-  { id: 'present', x: -14, z: -14, radius: 4.5, title: 'Who I Am', text: "A modern studio defining your current identity: sneakers, synth setup, and gaming.", theme: 'theme-present' },
-  { id: 'future', x: 0, z: -14, radius: 4.5, title: 'Who I Will Be', text: "Future aspirations and growth: vertical gardens, coffee mastery, and acoustic peace.", theme: 'theme-future' },
+  { id: 'me', x: 0, z: 0, radius: 5.5, title: 'ME (Central Me)', text: "The starting point and central axis. Choose your path to explore your narrative.", theme: 'theme-me' },
+  { id: 'past', x: -20, z: 0, radius: 6.5, title: 'Who I Was', text: "Childhood drawings, iconic toys, and a warm, safe atmosphere.", theme: 'theme-past' },
+  { id: 'present', x: -20, z: -20, radius: 6.5, title: 'Who I Am', text: "A modern studio defining your current identity: sneakers, synth setup, and gaming.", theme: 'theme-present' },
+  { id: 'future', x: 0, z: -20, radius: 6.5, title: 'Who I Will Be', text: "Future aspirations and growth: vertical gardens, coffee mastery, and acoustic peace.", theme: 'theme-future' },
 ];
 
 const BUILD_AREAS = [
-  { xMin: -3, xMax: 3, zMin: -3, zMax: 3 }, // Me
-  { xMin: -19, xMax: -9, zMin: -5, zMax: 5 }, // Past (left)
-  { xMin: -19, xMax: -9, zMin: -19, zMax: -9 }, // Present (top-diagonal)
-  { xMin: -5, xMax: 5, zMin: -19, zMax: -9 }, // Future (up-right)
-  { xMin: -9, xMax: -3, zMin: -1, zMax: 1 }, // Cor Past
-  { xMin: -1, xMax: 1, zMin: -9, zMax: -3 }, // Cor Future
+  { xMin: -27, xMax: -13, zMin: -7, zMax: 7 }, // Past
+  { xMin: -27, xMax: -13, zMin: -27, zMax: -13 }, // Present
+  { xMin: -7, xMax: 7, zMin: -27, zMax: -13 }, // Future
+  { xMin: -14, xMax: -3, zMin: -2, zMax: 2 }, // Cor Past
+  { xMin: -2, xMax: 2, zMin: -14, zMax: -3 }, // Cor Future
 ];
 
 // Define obstacles to restrict movement
 export const OBSTACLES = [
   // Past Room
-  { id: 'past_toy_shelf', x: -14, y: 1, z: -4.5, width: 4, height: 2, depth: 1 },
-  { id: 'past_drawings_wall', x: -18.5, y: 1.5, z: 0, width: 1, height: 3, depth: 4 },
-  { id: 'past_play_table', x: -14, y: 0.5, z: 2, width: 3, height: 1, depth: 3 },
+  { id: 'past_toy_shelf', x: -20, y: 1, z: -6.5, width: 4, height: 2, depth: 1 },
+  { id: 'past_drawings_wall', x: -26.5, y: 1.5, z: 0, width: 1, height: 3, depth: 4 },
+  { id: 'past_play_table', x: -20, y: 0.5, z: 2, width: 3, height: 1, depth: 3 },
 
-  // Present Room (-14, -14)
-  { id: 'present_tv_stand', x: -18.5, y: 0.5, z: -14, width: 1, height: 1, depth: 4 },
-  { id: 'present_synth_desk', x: -14, y: 0.8, z: -18.5, width: 4, height: 1, depth: 1 },
-  { id: 'present_sneaker_wall', x: -9.5, y: 1.5, z: -14, width: 1, height: 3, depth: 5 },
+  // Present Room (-20, -20)
+  { id: 'present_tv_stand', x: -26.5, y: 0.5, z: -20, width: 1, height: 1, depth: 4 },
+  { id: 'present_synth_desk', x: -20, y: 0.8, z: -26.5, width: 4, height: 1, depth: 1 },
+  { id: 'present_sneaker_wall', x: -13.5, y: 1.5, z: -20, width: 1, height: 3, depth: 5 },
 
-  // Future Room (0, -14)
-  { id: 'future_plant_wall', x: 0, y: 1.5, z: -18.5, width: 4, height: 3, depth: 1 },
-  { id: 'future_coffee_bar', x: 4.5, y: 1, z: -14, width: 1, height: 2, depth: 4 },
+  // Future Room (0, -20)
+  { id: 'future_plant_wall', x: 0, y: 1.5, z: -26.5, width: 4, height: 3, depth: 1 },
+  { id: 'future_coffee_bar', x: 6.5, y: 1, z: -20, width: 1, height: 2, depth: 4 },
 ];
 
 function inDiagonalCorridor(x: number, z: number) {
-  const width = 1.0; // half-width
+  const width = 2.0; // half-width
   const dist = Math.abs(x - z) / Math.SQRT2;
   const along = x + z;
-  return dist <= width + 0.05 && along <= -5 && along >= -19;
+  return dist <= width + 0.05 && along <= -4 && along >= -32;
 }
 
 function pointInAnyArea(x: number, z: number) {
   const eps = 0.001; // Tiny tolerance for floating point imprecision
+  if (Math.sqrt(x * x + z * z) <= 6.0 + eps) {
+    return true; // Circular Me Room
+  }
   for (let area of BUILD_AREAS) {
     if (x >= area.xMin - eps && x <= area.xMax + eps && z >= area.zMin - eps && z <= area.zMax + eps) {
       return true;
@@ -109,57 +112,58 @@ function Block({ position, size, color }: { position: [number, number, number], 
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={size} />
-      <meshToonMaterial color={color} />
-      <Edges color="#000000" scale={1.001} />
+      <meshStandardMaterial color={color} />
     </mesh>
   );
 }
 
-function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", hasWalls = false, isParquet = false }: { position: [number, number, number], size: [number, number], floorColor?: string, wallColor?: string, hasWalls?: boolean, isParquet?: boolean }) {
-  const parquetTexture = useMemo(() => {
-    if (!isParquet) return null;
-    const data = new Uint8Array([
-      180, 105, 59, 255,   200, 134, 87, 255,
-      200, 134, 87, 255,   180, 105, 59, 255,
-    ]);
-    const tex = new THREE.DataTexture(data, 2, 2, THREE.RGBAFormat);
-    tex.magFilter = THREE.NearestFilter;
-    tex.minFilter = THREE.NearestFilter;
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(size[0] / 2, size[1] / 2);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.needsUpdate = true;
-    return tex;
-  }, [isParquet, size[0], size[1]]);
+function ParquetFloorMaterial({ size }: { size: [number, number] }) {
+  const texture = useTexture(lightParquetUrl);
 
+  const clonedTexture = useMemo(() => {
+    const t = texture.clone();
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    // On met à (1, 1) pour que la texture s'étire sur toute la pièce sans se répéter
+    t.repeat.set(1, 1);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.needsUpdate = true;
+    return t;
+  }, [texture, size]);
+
+  return <meshStandardMaterial map={clonedTexture} color="#ffffff" />;
+}
+
+function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", hasWalls = false, isParquet = false, shape = 'square', yOffset = 0 }: { position: [number, number, number], size: [number, number], floorColor?: string, wallColor?: string, hasWalls?: boolean, isParquet?: boolean, shape?: 'square' | 'circle', yOffset?: number }) {
   return (
     <group position={position}>
-      {/* Floor with thick outlines for pixel art look */}
-      <mesh position={[0, -0.25, 0]} receiveShadow>
-        <boxGeometry args={[size[0], 0.5, size[1]]} />
-        {isParquet ? (
-          <meshToonMaterial map={parquetTexture} />
+      <mesh position={[0, -0.25 + yOffset, 0]} receiveShadow>
+        {shape === 'circle' ? (
+          <cylinderGeometry args={[size[0] / 2, size[0] / 2, 0.5, 64]} />
         ) : (
-          <meshToonMaterial color={floorColor} />
+          <boxGeometry args={[size[0], 0.5, size[1]]} />
         )}
-        <Edges color="#000000" scale={1.001} />
+        {isParquet ? (
+          <Suspense fallback={<meshStandardMaterial color="#2d2d2d" />}>
+            <ParquetFloorMaterial size={size} />
+          </Suspense>
+        ) : (
+          <meshStandardMaterial color={floorColor} />
+        )}
       </mesh>
-      
+
       {hasWalls && (
         <>
           {/* Back-Left Wall (z-axis) */}
-          <mesh position={[-size[0]/2 - 0.25, 2, -0.25]} receiveShadow>
-            <boxGeometry args={[0.5, 4, size[1] + 0.5]} />
-            <meshToonMaterial color={wallColor} />
-            <Edges color="#000000" scale={1.001} />
+          <mesh position={[-size[0] / 2 - 0.25, 1.75, -0.25]} receiveShadow>
+            <boxGeometry args={[0.5, 4.5, size[1] + 0.5]} />
+            <meshStandardMaterial color={wallColor} />
           </mesh>
 
           {/* Back-Right Wall (x-axis) */}
-          <mesh position={[-0.25, 2, -size[1]/2 - 0.25]} receiveShadow>
-            <boxGeometry args={[size[0] + 0.5, 4, 0.5]} />
-            <meshToonMaterial color={wallColor} />
-            <Edges color="#000000" scale={1.001} />
+          <mesh position={[-0.25, 1.75, -size[1] / 2 - 0.25]} receiveShadow>
+            <boxGeometry args={[size[0] + 0.5, 4.5, 0.5]} />
+            <meshStandardMaterial color={wallColor} />
           </mesh>
         </>
       )}
@@ -171,21 +175,21 @@ function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", h
 
 function PastRoom() {
   return (
-    <group position={[-14, 0, 0]}>
+    <group position={[-20, 0, 0]}>
       {/* Light for warm atmosphere */}
       <pointLight position={[0, 4, 0]} intensity={0.8} color="#fcd34d" distance={15} castShadow />
 
       {/* Toy Shelf (Top Wall) */}
-      <Block position={[0, 1, -4.5]} size={[4, 2, 1]} color="#8b5cf6" />
+      <Block position={[0, 1, -6.5]} size={[4, 2, 1]} color="#8b5cf6" />
       {/* Toys on shelf */}
-      <Block position={[-1, 2.2, -4.5]} size={[0.4, 0.4, 0.4]} color="#ef4444" />
-      <Block position={[0, 2.2, -4.5]} size={[0.8, 0.4, 0.4]} color="#eab308" />
-      <Block position={[1, 2.3, -4.5]} size={[0.6, 0.6, 0.6]} color="#3b82f6" />
+      <Block position={[-1, 2.2, -6.5]} size={[0.4, 0.4, 0.4]} color="#ef4444" />
+      <Block position={[0, 2.2, -6.5]} size={[0.8, 0.4, 0.4]} color="#eab308" />
+      <Block position={[1, 2.3, -6.5]} size={[0.6, 0.6, 0.6]} color="#3b82f6" />
 
       {/* Drawings Wall (Left Wall) */}
-      <Block position={[-4.5, 1.5, 0]} size={[1, 3, 4]} color="#fdf8f6" />
-      <Block position={[-4.4, 1.5, 0]} size={[0.1, 0.8, 1]} color="#f43f5e" />
-      <Block position={[-4.4, 2, -1]} size={[0.1, 0.6, 0.8]} color="#10b981" />
+      <Block position={[-6.5, 1.5, 0]} size={[1, 3, 4]} color="#fdf8f6" />
+      <Block position={[-6.4, 1.5, 0]} size={[0.1, 0.8, 1]} color="#f43f5e" />
+      <Block position={[-6.4, 2, -1]} size={[0.1, 0.6, 0.8]} color="#10b981" />
 
       {/* Play Table */}
       <Block position={[0, 0.5, 2]} size={[3, 1, 3]} color="#fb923c" />
@@ -196,45 +200,45 @@ function PastRoom() {
 
 function PresentRoom() {
   return (
-    <group position={[-14, 0, -14]}>
+    <group position={[-20, 0, -20]}>
       {/* Light for modern studio */}
       <pointLight position={[0, 4, 0]} intensity={0.8} color="#a7f3d0" distance={15} castShadow />
 
       {/* TV & PS5 (Left Wall) */}
-      <Block position={[-4.5, 0.5, 0]} size={[1, 1, 4]} color="#1e293b" /> {/* Stand */}
-      <Block position={[-4.5, 1.8, 0]} size={[0.2, 1.6, 3]} color="#0f172a" /> {/* TV Screen */}
-      <Block position={[-4.5, 1.2, 1.5]} size={[0.4, 0.8, 0.2]} color="#f8fafc" /> {/* PS5 */}
+      <Block position={[-6.5, 0.5, 0]} size={[1, 1, 4]} color="#1e293b" /> {/* Stand */}
+      <Block position={[-6.5, 1.8, 0]} size={[0.2, 1.6, 3]} color="#0f172a" /> {/* TV Screen */}
+      <Block position={[-6.5, 1.2, 1.5]} size={[0.4, 0.8, 0.2]} color="#f8fafc" /> {/* PS5 */}
 
       {/* Synth Desk (Top Wall) */}
-      <Block position={[0, 0.8, -4.5]} size={[4, 1, 1]} color="#334155" /> {/* Desk */}
-      <Block position={[0, 1.4, -4.5]} size={[2, 0.2, 0.6]} color="#111827" /> {/* Synth Keyboard */}
-      <Block position={[-1.5, 1.4, -4.5]} size={[0.4, 0.6, 0.4]} color="#cbd5e1" /> {/* Speaker L */}
-      <Block position={[1.5, 1.4, -4.5]} size={[0.4, 0.6, 0.4]} color="#cbd5e1" /> {/* Speaker R */}
+      <Block position={[0, 0.8, -6.5]} size={[4, 1, 1]} color="#334155" /> {/* Desk */}
+      <Block position={[0, 1.4, -6.5]} size={[2, 0.2, 0.6]} color="#111827" /> {/* Synth Keyboard */}
+      <Block position={[-1.5, 1.4, -6.5]} size={[0.4, 0.6, 0.4]} color="#cbd5e1" /> {/* Speaker L */}
+      <Block position={[1.5, 1.4, -6.5]} size={[0.4, 0.6, 0.4]} color="#cbd5e1" /> {/* Speaker R */}
 
       {/* Sneaker Wall (Right Wall) */}
-      <Block position={[4.5, 1.5, 0]} size={[1, 3, 5]} color="#e2e8f0" />
-      <Block position={[4.4, 1, -1]} size={[0.4, 0.3, 0.6]} color="#ef4444" />
-      <Block position={[4.4, 1.8, 0]} size={[0.4, 0.3, 0.6]} color="#3b82f6" />
-      <Block position={[4.4, 2.6, 1]} size={[0.4, 0.3, 0.6]} color="#10b981" />
+      <Block position={[6.5, 1.5, 0]} size={[1, 3, 5]} color="#e2e8f0" />
+      <Block position={[6.4, 1, -1]} size={[0.4, 0.3, 0.6]} color="#ef4444" />
+      <Block position={[6.4, 1.8, 0]} size={[0.4, 0.3, 0.6]} color="#3b82f6" />
+      <Block position={[6.4, 2.6, 1]} size={[0.4, 0.3, 0.6]} color="#10b981" />
     </group>
   );
 }
 
 function FutureRoom() {
   return (
-    <group position={[0, 0, -14]}>
+    <group position={[0, 0, -20]}>
       {/* Light for peaceful atmosphere */}
       <pointLight position={[0, 4, 0]} intensity={0.8} color="#fef08a" distance={15} castShadow />
 
       {/* Vertical Garden (Top Wall) */}
-      <Block position={[0, 1.5, -4.5]} size={[4, 3, 1]} color="#14532d" />
-      <Block position={[-1, 2, -4.4]} size={[0.8, 0.8, 0.8]} color="#22c55e" />
-      <Block position={[1, 1.5, -4.4]} size={[1, 1, 1]} color="#4ade80" />
-      <Block position={[0, 2.5, -4.4]} size={[0.6, 0.6, 0.6]} color="#16a34a" />
+      <Block position={[0, 1.5, -6.5]} size={[4, 3, 1]} color="#14532d" />
+      <Block position={[-1, 2, -6.4]} size={[0.8, 0.8, 0.8]} color="#22c55e" />
+      <Block position={[1, 1.5, -6.4]} size={[1, 1, 1]} color="#4ade80" />
+      <Block position={[0, 2.5, -6.4]} size={[0.6, 0.6, 0.6]} color="#16a34a" />
 
       {/* Coffee Bar (Right Wall) */}
-      <Block position={[4.5, 1, 0]} size={[1, 2, 4]} color="#78350f" /> {/* Wood Bar */}
-      <Block position={[4.5, 2.2, 0]} size={[0.6, 0.4, 0.6]} color="#94a3b8" /> {/* Espresso Machine */}
+      <Block position={[6.5, 1, 0]} size={[1, 2, 4]} color="#78350f" /> {/* Wood Bar */}
+      <Block position={[6.5, 2.2, 0]} size={[0.6, 0.4, 0.6]} color="#94a3b8" /> {/* Espresso Machine */}
     </group>
   );
 }
@@ -243,21 +247,20 @@ function Apartment() {
   return (
     <group>
       {/* Floors */}
-      <Room position={[0, 0, 0]} size={[6, 6]} floorColor="#e5e5e5" /> {/* Me Room (Neutral) */}
-      <Room position={[-14, 0, 0]} size={[10, 10]} floorColor="#fed7aa" hasWalls={true} /> {/* Past (Warm) */}
-      <Room position={[-14, 0, -14]} size={[10, 10]} floorColor="#94a3b8" hasWalls={true} /> {/* Present (Modern) */}
-      <Room position={[0, 0, -14]} size={[10, 10]} hasWalls={true} isParquet={true} /> {/* Future (Nature/Warm Parquet) */}
+      <Room position={[0, 0, 0]} size={[12, 12]} floorColor="#e5e5e5" shape="circle" /> {/* Me Room (Neutral) */}
+      <Room position={[-20, 0, 0]} size={[14, 14]} floorColor="#fed7aa" hasWalls={true} /> {/* Past (Warm) */}
+      <Room position={[-20, 0, -20]} size={[14, 14]} floorColor="#94a3b8" hasWalls={true} /> {/* Present (Modern) */}
+      <Room position={[0, 0, -20]} size={[14, 14]} hasWalls={true} isParquet={true} /> {/* Future (Nature/Warm Parquet) */}
 
       {/* Corridors */}
-      <Room position={[-6, 0, 0]} size={[6, 2]} floorColor="#e5e5e5" />
-      <Room position={[0, 0, -6]} size={[2, 6]} floorColor="#e5e5e5" />
+      <Room position={[-8.5, 0, 0]} size={[9, 4]} floorColor="#e5e5e5" yOffset={-0.001} />
+      <Room position={[0, 0, -8.5]} size={[4, 9]} floorColor="#e5e5e5" yOffset={-0.001} />
 
       {/* Diagonal Corridor to Present */}
-      <group position={[-6, 0, -6]} rotation={[0, Math.PI / 4, 0]}>
-        <mesh position={[0, -0.26, 0]} receiveShadow>
-          <boxGeometry args={[2, 0.5, 8.5]} />
-          <meshToonMaterial color="#e5e5e5" />
-          <Edges color="#000000" scale={1.001} />
+      <group position={[-8.5, 0, -8.5]} rotation={[0, Math.PI / 4, 0]}>
+        <mesh position={[0, -0.251, 0]} receiveShadow>
+          <boxGeometry args={[4, 0.5, 20]} />
+          <meshStandardMaterial color="#e5e5e5" />
         </mesh>
       </group>
 
@@ -328,8 +331,7 @@ function Player({ setZone }: { setZone: (z: ZoneType) => void }) {
   return (
     <mesh ref={meshRef} position={[0, 0.8, 0]} castShadow>
       <boxGeometry args={[0.8, 1.6, 0.8]} />
-      <meshToonMaterial color="#38bdf8" />
-      <Edges color="#000000" scale={1.001} />
+      <meshStandardMaterial color="#38bdf8" />
     </mesh>
   );
 }
@@ -355,13 +357,13 @@ function App() {
 
       <Canvas shadows gl={{ antialias: false }} dpr={0.5}>
         <OrthographicCamera makeDefault position={[15, 15, 15]} zoom={40} />
-        {/* Slightly brighter ambient light for the cartoon look */}
-        <ambientLight intensity={0.6} color="#ffffff" />
+        {/* Lower ambient light for better shadow contrast */}
+        <ambientLight intensity={0.3} color="#ffffff" />
         <directionalLight
           position={[10, 20, 5]}
-          intensity={1.0}
+          intensity={1.8}
           castShadow
-          shadow-mapSize={[512, 512]}
+          shadow-mapSize={[2048, 2048]}
           shadow-camera-left={-30}
           shadow-camera-right={30}
           shadow-camera-top={30}

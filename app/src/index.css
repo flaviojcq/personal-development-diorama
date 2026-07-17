@@ -68,6 +68,7 @@ html, body, #root {
   padding: 1rem;
   border-radius: 12px;
   pointer-events: none;
+  z-index: 100;
 }
 
 canvas {
