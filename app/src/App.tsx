@@ -1,18 +1,22 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrthographicCamera, useTexture } from '@react-three/drei';
+import { Canvas, useFrame, useThree, useLoader } from '@react-three/fiber';
+import { OrthographicCamera, useTexture, Html, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import lightParquetUrl from './assets/light_parquet.jpg';
+import fiddleLeafUrl from '../public/models/fiddle_leaf_plant.glb?url';
+import housePlantUrl from '../public/models/house_plant.glb?url';
+import umbrellapalmUrl from '../public/models/umbrella_palm.glb?url';
+import birdsOfParadiseUrl from '../public/models/birds_of_paradise.glb?url';
 import './index.css';
 
 // --- Types & Constants ---
 type ZoneType = 'none' | 'me' | 'past' | 'present' | 'future';
 
 const ZONES = [
-  { id: 'me', x: 0, z: 0, radius: 5.5, title: 'ME (Central Me)', text: "The starting point and central axis. Choose your path to explore your narrative.", theme: 'theme-me' },
-  { id: 'past', x: -20, z: 0, radius: 6.5, title: 'Who I Was', text: "Childhood drawings, iconic toys, and a warm, safe atmosphere.", theme: 'theme-past' },
-  { id: 'present', x: -20, z: -20, radius: 6.5, title: 'Who I Am', text: "A modern studio defining your current identity: sneakers, synth setup, and gaming.", theme: 'theme-present' },
-  { id: 'future', x: 0, z: -20, radius: 6.5, title: 'Who I Will Be', text: "Future aspirations and growth: vertical gardens, coffee mastery, and acoustic peace.", theme: 'theme-future' },
+  { id: 'me', type: 'circle', x: 0, z: 0, size: 6.0, title: 'ME (Central Me)', text: "The starting point and central axis. Choose your path to explore your narrative.", theme: 'theme-me' },
+  { id: 'past', type: 'square', x: -20, z: 0, size: 7.0, title: 'Who I Was', text: "Childhood drawings, iconic toys, and a warm, safe atmosphere.", theme: 'theme-past' },
+  { id: 'present', type: 'square', x: -20, z: -20, size: 7.0, title: 'Who I Am', text: "A modern studio defining your current identity: sneakers, synth setup, and gaming.", theme: 'theme-present' },
+  { id: 'future', type: 'square', x: 0, z: -20, size: 7.0, title: 'Who I Will Be', text: "Future aspirations and growth: vertical gardens, coffee mastery, and acoustic peace.", theme: 'theme-future' },
 ];
 
 const BUILD_AREAS = [
@@ -117,6 +121,89 @@ function Block({ position, size, color }: { position: [number, number, number], 
   );
 }
 
+function ClickableBlock({ position, size, color, text }: { position: [number, number, number], size: [number, number, number], color: string, text: string }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+  // Écouter les clics sur les autres blocs pour se fermer automatiquement
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) {
+        setClicked(false);
+      }
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    if (willBeClicked) {
+      window.dispatchEvent(new CustomEvent('block-clicked', { detail: text }));
+    } else {
+      window.dispatchEvent(new CustomEvent('block-clicked', { detail: null }));
+    }
+  };
+
+  // Intensité de la lumière selon l'état
+  let currentEmissive = 0.25; // Visible faiblement de base
+  if (hovered) currentEmissive = 0.5;
+  if (clicked) currentEmissive = 1.0; // Augmente si cliqué
+
+  // Animation de flottement au survol
+  useFrame((state) => {
+    if (!meshRef.current) return;
+
+    // Hauteur de base
+    let targetY = position[1];
+
+    // Ajout d'un petit saut/flottement
+    if (hovered) {
+      targetY += Math.sin(state.clock.elapsedTime * 6) * 0.15 + 0.1;
+    }
+
+    // Interpolation fluide vers la position cible
+    meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, targetY, 0.2);
+  });
+
+  return (
+    <mesh
+      ref={meshRef}
+      position={position}
+      castShadow
+      receiveShadow
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <boxGeometry args={size} />
+
+      {/* Matériau avec l'effet emissive ajusté */}
+      <meshStandardMaterial
+        color={color}
+        emissive={color}
+        emissiveIntensity={currentEmissive}
+      />
+
+      {/* Lumière ambiante autour de l'objet qui augmente au clic */}
+      <pointLight distance={3} intensity={clicked ? 1.0 : (hovered ? 0.6 : 0.3)} color={color} />
+
+      {/* Texte affiché plus haut */}
+      {clicked && (
+        <Html position={[0, size[1] / 2 + 1.2, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">
+            {text}
+          </div>
+        </Html>
+      )}
+    </mesh>
+  );
+}
+
 function ParquetFloorMaterial({ size }: { size: [number, number] }) {
   const texture = useTexture(lightParquetUrl);
 
@@ -132,6 +219,51 @@ function ParquetFloorMaterial({ size }: { size: [number, number] }) {
   }, [texture, size]);
 
   return <meshStandardMaterial map={clonedTexture} color="#ffffff" />;
+}
+
+function FiddleLeafPlant({ position }: { position: [number, number, number] }) {
+  const { scene } = useGLTF(fiddleLeafUrl);
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  }, [scene]);
+
+  return <primitive object={scene} position={position} scale={0.5} />;
+}
+
+function HousePlant({ position }: { position: [number, number, number] }) {
+  const { scene } = useGLTF(housePlantUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} scale={0.5} />;
+}
+
+function UmbrellaPalm({ position }: { position: [number, number, number] }) {
+  const { scene } = useGLTF(umbrellapalmUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} scale={0.5} />;
+}
+
+function BirdsOfParadise({ position }: { position: [number, number, number] }) {
+  const { scene } = useGLTF(birdsOfParadiseUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} scale={0.5} />;
 }
 
 function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", hasWalls = false, isParquet = false, shape = 'square', yOffset = 0 }: { position: [number, number, number], size: [number, number], floorColor?: string, wallColor?: string, hasWalls?: boolean, isParquet?: boolean, shape?: 'square' | 'circle', yOffset?: number }) {
@@ -182,9 +314,9 @@ function PastRoom() {
       {/* Toy Shelf (Top Wall) */}
       <Block position={[0, 1, -6.5]} size={[4, 2, 1]} color="#8b5cf6" />
       {/* Toys on shelf */}
-      <Block position={[-1, 2.2, -6.5]} size={[0.4, 0.4, 0.4]} color="#ef4444" />
-      <Block position={[0, 2.2, -6.5]} size={[0.8, 0.4, 0.4]} color="#eab308" />
-      <Block position={[1, 2.3, -6.5]} size={[0.6, 0.6, 0.6]} color="#3b82f6" />
+      <ClickableBlock position={[-1, 2.2, -6.5]} size={[0.4, 0.4, 0.4]} color="#ef4444" text="My first fire truck" />
+      <ClickableBlock position={[0, 2.2, -6.5]} size={[0.8, 0.4, 0.4]} color="#eab308" text="Wooden blocks" />
+      <ClickableBlock position={[1, 2.3, -6.5]} size={[0.6, 0.6, 0.6]} color="#3b82f6" text="Action figure" />
 
       {/* Drawings Wall (Left Wall) */}
       <Block position={[-6.5, 1.5, 0]} size={[1, 3, 4]} color="#fdf8f6" />
@@ -207,19 +339,19 @@ function PresentRoom() {
       {/* TV & PS5 (Left Wall) */}
       <Block position={[-6.5, 0.5, 0]} size={[1, 1, 4]} color="#1e293b" /> {/* Stand */}
       <Block position={[-6.5, 1.8, 0]} size={[0.2, 1.6, 3]} color="#0f172a" /> {/* TV Screen */}
-      <Block position={[-6.5, 1.2, 1.5]} size={[0.4, 0.8, 0.2]} color="#f8fafc" /> {/* PS5 */}
+      <ClickableBlock position={[-6.5, 1.2, 1.5]} size={[0.4, 0.8, 0.2]} color="#f8fafc" text="Playing Elden Ring" /> {/* PS5 */}
 
       {/* Synth Desk (Top Wall) */}
       <Block position={[0, 0.8, -6.5]} size={[4, 1, 1]} color="#334155" /> {/* Desk */}
-      <Block position={[0, 1.4, -6.5]} size={[2, 0.2, 0.6]} color="#111827" /> {/* Synth Keyboard */}
+      <ClickableBlock position={[0, 1.4, -6.5]} size={[2, 0.2, 0.6]} color="#111827" text="Making beats" /> {/* Synth Keyboard */}
       <Block position={[-1.5, 1.4, -6.5]} size={[0.4, 0.6, 0.4]} color="#cbd5e1" /> {/* Speaker L */}
       <Block position={[1.5, 1.4, -6.5]} size={[0.4, 0.6, 0.4]} color="#cbd5e1" /> {/* Speaker R */}
 
       {/* Sneaker Wall (Right Wall) */}
       <Block position={[6.5, 1.5, 0]} size={[1, 3, 5]} color="#e2e8f0" />
-      <Block position={[6.4, 1, -1]} size={[0.4, 0.3, 0.6]} color="#ef4444" />
-      <Block position={[6.4, 1.8, 0]} size={[0.4, 0.3, 0.6]} color="#3b82f6" />
-      <Block position={[6.4, 2.6, 1]} size={[0.4, 0.3, 0.6]} color="#10b981" />
+      <ClickableBlock position={[6.4, 1, -1]} size={[0.4, 0.3, 0.6]} color="#ef4444" text="Jordan 1 Chicago" />
+      <ClickableBlock position={[6.4, 1.8, 0]} size={[0.4, 0.3, 0.6]} color="#3b82f6" text="Royal Blue Dunk" />
+      <ClickableBlock position={[6.4, 2.6, 1]} size={[0.4, 0.3, 0.6]} color="#10b981" text="Pine Green Runner" />
     </group>
   );
 }
@@ -232,13 +364,33 @@ function FutureRoom() {
 
       {/* Vertical Garden (Top Wall) */}
       <Block position={[0, 1.5, -6.5]} size={[4, 3, 1]} color="#14532d" />
-      <Block position={[-1, 2, -6.4]} size={[0.8, 0.8, 0.8]} color="#22c55e" />
-      <Block position={[1, 1.5, -6.4]} size={[1, 1, 1]} color="#4ade80" />
+      <ClickableBlock position={[-1, 2, -6.4]} size={[0.8, 0.8, 0.8]} color="#22c55e" text="Growing basil & mint" />
+      <ClickableBlock position={[1, 1.5, -6.4]} size={[1, 1, 1]} color="#4ade80" text="Monstera plant" />
       <Block position={[0, 2.5, -6.4]} size={[0.6, 0.6, 0.6]} color="#16a34a" />
 
       {/* Coffee Bar (Right Wall) */}
       <Block position={[6.5, 1, 0]} size={[1, 2, 4]} color="#78350f" /> {/* Wood Bar */}
-      <Block position={[6.5, 2.2, 0]} size={[0.6, 0.4, 0.6]} color="#94a3b8" /> {/* Espresso Machine */}
+      <ClickableBlock position={[6.5, 2.2, 0]} size={[0.6, 0.4, 0.6]} color="#94a3b8" text="Perfecting espresso shots" /> {/* Espresso Machine */}
+
+      {/* Fiddle Leaf Plant - centre de la pièce */}
+      <Suspense fallback={<Block position={[0, 1, 0]} size={[1, 2, 1]} color="#16a34a" />}>
+        <FiddleLeafPlant position={[0, 0, 0]} />
+      </Suspense>
+
+      {/* House Plant - coin gauche */}
+      <Suspense fallback={<Block position={[-4, 1, 2]} size={[0.8, 1.5, 0.8]} color="#22c55e" />}>
+        <HousePlant position={[-4, 0, 2]} />
+      </Suspense>
+
+      {/* Umbrella Palm - coin droite */}
+      <Suspense fallback={<Block position={[4, 1, 2]} size={[1, 2, 1]} color="#4ade80" />}>
+        <UmbrellaPalm position={[4, 0, 2]} />
+      </Suspense>
+
+      {/* Birds of Paradise - coin avant gauche */}
+      <Suspense fallback={<Block position={[-4, 1, -2]} size={[1, 2, 1]} color="#84cc16" />}>
+        <BirdsOfParadise position={[-4, 0, -2]} />
+      </Suspense>
     </group>
   );
 }
@@ -308,13 +460,22 @@ function Player({ setZone }: { setZone: (z: ZoneType) => void }) {
 
       let activeZone: ZoneType = 'none';
       for (const zone of ZONES) {
-        const dist = Math.sqrt(
-          Math.pow(meshRef.current.position.x - zone.x, 2) +
-          Math.pow(meshRef.current.position.z - zone.z, 2)
-        );
-        if (dist < zone.radius) {
-          activeZone = zone.id as ZoneType;
-          break;
+        if (zone.type === 'circle') {
+          const dist = Math.sqrt(
+            Math.pow(meshRef.current.position.x - zone.x, 2) +
+            Math.pow(meshRef.current.position.z - zone.z, 2)
+          );
+          if (dist <= zone.size) {
+            activeZone = zone.id as ZoneType;
+            break;
+          }
+        } else if (zone.type === 'square') {
+          const dx = Math.abs(meshRef.current.position.x - zone.x);
+          const dz = Math.abs(meshRef.current.position.z - zone.z);
+          if (dx <= zone.size && dz <= zone.size) {
+            activeZone = zone.id as ZoneType;
+            break;
+          }
         }
       }
       setZone(activeZone);

@@ -1,0 +1,16 @@
+# Large asset source folders (not needed in git, files are bundled via Vite)
+Free Sample/
+Inspiration/
+
+# Dependencies
+app/node_modules/
+
+# Build output
+app/dist/
+
+# Vite cache
+app/.vite/
+
+# OS files
+.DS_Store
+Thumbs.db
