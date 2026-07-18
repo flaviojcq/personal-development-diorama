@@ -7,6 +7,8 @@ import fiddleLeafUrl from '../public/models/fiddle_leaf_plant.glb?url';
 import housePlantUrl from '../public/models/house_plant.glb?url';
 import umbrellapalmUrl from '../public/models/umbrella_palm.glb?url';
 import birdsOfParadiseUrl from '../public/models/birds_of_paradise.glb?url';
+import wassilyChairUrl from '../public/models/wassily_chair.glb?url';
+import monsterraUrl from '../public/models/monsterra.glb?url';
 import './index.css';
 
 // --- Types & Constants ---
@@ -149,25 +151,28 @@ function ClickableBlock({ position, size, color, text }: { position: [number, nu
     }
   };
 
-  // Intensité de la lumière selon l'état
-  let currentEmissive = 0.25; // Visible faiblement de base
-  if (hovered) currentEmissive = 0.5;
-  if (clicked) currentEmissive = 1.0; // Augmente si cliqué
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
 
-  // Animation de flottement au survol
+  // Animation de flottement au survol et pulsation lumineuse
   useFrame((state) => {
     if (!meshRef.current) return;
 
     // Hauteur de base
     let targetY = position[1];
 
-    // Ajout d'un petit saut/flottement
+    // Ajout d'un petit saut/flottement au survol
     if (hovered) {
       targetY += Math.sin(state.clock.elapsedTime * 6) * 0.15 + 0.1;
     }
 
     // Interpolation fluide vers la position cible
     meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, targetY, 0.2);
+
+    // Ajustement de la lumière (sans pulsation)
+    if (materialRef.current) {
+      const targetGlow = clicked ? 1.0 : (hovered ? 0.5 : 0.25);
+      materialRef.current.emissiveIntensity = THREE.MathUtils.lerp(materialRef.current.emissiveIntensity, targetGlow, 0.15);
+    }
   });
 
   return (
@@ -182,17 +187,18 @@ function ClickableBlock({ position, size, color, text }: { position: [number, nu
     >
       <boxGeometry args={size} />
 
-      {/* Matériau avec l'effet emissive ajusté */}
+      {/* Matériau avec l'effet emissive ajusté dynamiquement */}
       <meshStandardMaterial
+        ref={materialRef}
         color={color}
         emissive={color}
-        emissiveIntensity={currentEmissive}
+        emissiveIntensity={0.25}
       />
 
       {/* Lumière ambiante autour de l'objet qui augmente au clic */}
       <pointLight distance={3} intensity={clicked ? 1.0 : (hovered ? 0.6 : 0.3)} color={color} />
 
-      {/* Texte affiché plus haut */}
+      {/* Texte au clic */}
       {clicked && (
         <Html position={[0, size[1] / 2 + 1.2, 0]} center zIndexRange={[100, 0]}>
           <div className="clickable-text">
@@ -263,7 +269,106 @@ function BirdsOfParadise({ position }: { position: [number, number, number] }) {
       if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
     });
   }, [scene]);
-  return <primitive object={scene} position={position} scale={0.5} />;
+  return <primitive object={scene} position={position} scale={0.8} />;
+}
+
+function WassilyChair({ position }: { position: [number, number, number] }) {
+  const { scene } = useGLTF(wassilyChairUrl);
+  const groupRef = useRef<THREE.Group>(null);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+  const text = "My favorite reading chair";
+
+  // Se ferme si un autre objet est cliqué
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
+  // Préparation des matériaux pour qu'ils puissent briller (glow)
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        // Cloner le matériau pour ne modifier que cette chaise
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#fef08a"); // Couleur dorée du halo
+          mat.emissiveIntensity = 0;
+        }
+      }
+    });
+  }, [scene]);
+
+  // Animation de flottement et de surbrillance
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    
+    // Flottement
+    let targetY = position[1];
+    if (hovered) {
+      targetY += Math.sin(state.clock.elapsedTime * 6) * 0.08 + 0.06;
+    }
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
+
+    // Surbrillance douce de la chaise (glow sans pulsation)
+    const targetGlow = clicked ? 0.6 : (hovered ? 0.3 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined) {
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.15);
+        }
+      }
+    });
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={position}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <primitive object={scene} scale={0.08} />
+
+      {/* Lumière d'ambiance douce sur le sol autour de la chaise */}
+      <pointLight position={[0, 0.5, 0]} distance={5} intensity={clicked ? 1 : (hovered ? 0.5 : 0)} color="#fef08a" />
+
+      {/* Texte au clic */}
+      {clicked && (
+        <Html position={[0, 3, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">{text}</div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function Monsterra({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(monsterraUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={0.7} />;
 }
 
 function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", hasWalls = false, isParquet = false, shape = 'square', yOffset = 0 }: { position: [number, number, number], size: [number, number], floorColor?: string, wallColor?: string, hasWalls?: boolean, isParquet?: boolean, shape?: 'square' | 'circle', yOffset?: number }) {
@@ -359,37 +464,34 @@ function PresentRoom() {
 function FutureRoom() {
   return (
     <group position={[0, 0, -20]}>
-      {/* Light for peaceful atmosphere */}
-      <pointLight position={[0, 4, 0]} intensity={0.8} color="#fef08a" distance={15} castShadow />
-
-      {/* Vertical Garden (Top Wall) */}
-      <Block position={[0, 1.5, -6.5]} size={[4, 3, 1]} color="#14532d" />
-      <ClickableBlock position={[-1, 2, -6.4]} size={[0.8, 0.8, 0.8]} color="#22c55e" text="Growing basil & mint" />
-      <ClickableBlock position={[1, 1.5, -6.4]} size={[1, 1, 1]} color="#4ade80" text="Monstera plant" />
-      <Block position={[0, 2.5, -6.4]} size={[0.6, 0.6, 0.6]} color="#16a34a" />
-
-      {/* Coffee Bar (Right Wall) */}
-      <Block position={[6.5, 1, 0]} size={[1, 2, 4]} color="#78350f" /> {/* Wood Bar */}
-      <ClickableBlock position={[6.5, 2.2, 0]} size={[0.6, 0.4, 0.6]} color="#94a3b8" text="Perfecting espresso shots" /> {/* Espresso Machine */}
-
       {/* Fiddle Leaf Plant - centre de la pièce */}
       <Suspense fallback={<Block position={[0, 1, 0]} size={[1, 2, 1]} color="#16a34a" />}>
-        <FiddleLeafPlant position={[0, 0, 0]} />
+        <FiddleLeafPlant position={[-6, 0, -6]} />
       </Suspense>
 
       {/* House Plant - coin gauche */}
       <Suspense fallback={<Block position={[-4, 1, 2]} size={[0.8, 1.5, 0.8]} color="#22c55e" />}>
-        <HousePlant position={[-4, 0, 2]} />
+        <HousePlant position={[-6, 0, 2]} />
       </Suspense>
 
       {/* Umbrella Palm - coin droite */}
       <Suspense fallback={<Block position={[4, 1, 2]} size={[1, 2, 1]} color="#4ade80" />}>
-        <UmbrellaPalm position={[4, 0, 2]} />
+        <UmbrellaPalm position={[6.5, 0, -6]} />
       </Suspense>
 
       {/* Birds of Paradise - coin avant gauche */}
       <Suspense fallback={<Block position={[-4, 1, -2]} size={[1, 2, 1]} color="#84cc16" />}>
-        <BirdsOfParadise position={[-4, 0, -2]} />
+        <BirdsOfParadise position={[-1, 0, -6]} />
+      </Suspense>
+
+      {/* Monsterra - coin avant gauche */}
+      <Suspense fallback={<Block position={[-4, 1, -2]} size={[1, 2, 1]} color="#84cc16" />}>
+        <Monsterra position={[-4.5, 0, -6]} rotation={[0, -Math.PI / 2, 0]} />
+      </Suspense>
+
+      {/* Wassily Chair */}
+      <Suspense fallback={<Block position={[0, 1, 3]} size={[1.5, 1.5, 1.5]} color="#94a3b8" />}>
+        <WassilyChair position={[0, 0, -4.5]} />
       </Suspense>
     </group>
   );
