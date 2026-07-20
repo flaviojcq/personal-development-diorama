@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrthographicCamera, useTexture, Html, useGLTF } from '@react-three/drei';
+import { OrthographicCamera, useTexture, Html, useGLTF, Center, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import lightParquetUrl from './assets/light_parquet.jpg';
 import fiddleLeafUrl from '../public/models/fiddle_leaf_plant.glb?url';
@@ -9,6 +9,17 @@ import umbrellapalmUrl from '../public/models/umbrella_palm.glb?url';
 import birdsOfParadiseUrl from '../public/models/birds_of_paradise.glb?url';
 import wassilyChairUrl from '../public/models/wassily_chair.glb?url';
 import monsterraUrl from '../public/models/monsterra.glb?url';
+import drawerUrl from '../public/models/drawer.glb?url';
+import recordPLayerUrl from '../public/models/record_player.glb?url';
+import orchidUrl from '../public/models/orchid.glb?url';
+import pianoUrl from '../public/models/piano.glb?url';
+import acousticGuitarUrl from '../public/models/acoustic_guitar.glb?url';
+import speakerUrl from '../public/models/speaker.glb?url';
+import bedUrl from '../public/models/bed.glb?url';
+import carpetUrl from '../public/models/persian_carpet.glb?url';
+import catUrl from '../public/models/an_animated_cat.glb?url';
+import dogUrl from '../public/models/bullcat.glb?url';
+import ps5GamingSetupUrl from '../public/models/ps5_gaming_setup.glb?url';
 import './index.css';
 
 // --- Types & Constants ---
@@ -318,7 +329,7 @@ function WassilyChair({ position }: { position: [number, number, number] }) {
   // Animation de flottement et de surbrillance
   useFrame((state) => {
     if (!groupRef.current) return;
-    
+
     // Flottement
     let targetY = position[1];
     if (hovered) {
@@ -369,6 +380,146 @@ function Monsterra({ position, rotation }: { position: [number, number, number],
     });
   }, [scene]);
   return <primitive object={scene} position={position} rotation={rotation} scale={0.7} />;
+}
+
+function Drawer({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(drawerUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={1.2} />;
+}
+
+function RecordPlayer({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(recordPLayerUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={0.001} />;
+}
+
+function Orchid({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(orchidUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={0.15} />;
+}
+
+function Piano({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(pianoUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return (
+    <group position={position} rotation={rotation}>
+      <Center bottom>
+        <primitive object={scene} scale={0.00003} />
+      </Center>
+    </group>
+  );
+}
+
+function AcousticGuitar({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(acousticGuitarUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={0.085} />;
+}
+
+function Bed({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(bedUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return (
+    <group position={position} rotation={rotation}>
+      <Center bottom>
+        <primitive object={scene} scale={3.5} />
+      </Center>
+    </group>
+  );
+}
+
+function Speaker({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(speakerUrl);
+  const clonedScene = useMemo(() => {
+    const clone = scene.clone();
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+    return clone;
+  }, [scene]);
+  return <primitive object={clonedScene} position={position} rotation={rotation} scale={2} />;
+}
+
+function Carpet({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(carpetUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={2.6} />;
+}
+
+function Cat({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const { scene, animations } = useGLTF(catUrl);
+  const { actions } = useAnimations(animations, groupRef);
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+
+  useEffect(() => {
+    // Play first available animation
+    const firstAction = Object.values(actions)[0];
+    if (firstAction) {
+      firstAction.reset().play();
+    }
+  }, [actions]);
+
+  return (
+    <group ref={groupRef} position={position} rotation={rotation}>
+      <primitive object={scene} scale={0.07} />
+    </group>
+  );
+}
+
+function Dog({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(dogUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={2.2} />;
+}
+
+function PS5GamingSetup({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+  const { scene } = useGLTF(ps5GamingSetupUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={0.6} />;
 }
 
 function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", hasWalls = false, isParquet = false, shape = 'square', yOffset = 0 }: { position: [number, number, number], size: [number, number], floorColor?: string, wallColor?: string, hasWalls?: boolean, isParquet?: boolean, shape?: 'square' | 'circle', yOffset?: number }) {
@@ -438,25 +589,25 @@ function PastRoom() {
 function PresentRoom() {
   return (
     <group position={[-20, 0, -20]}>
-      {/* Light for modern studio */}
-      <pointLight position={[0, 4, 0]} intensity={0.8} color="#a7f3d0" distance={15} castShadow />
+      {/* Piano (Top Wall) */}
+      <Suspense fallback={<Block position={[3, 1, -6.5]} size={[2, 2, 1]} color="#1e1e1e" />}>
+        <Piano position={[-5.8, 3, 0]} rotation={[0, -2 * Math.PI / 4.3, 0]} />
+      </Suspense>
 
-      {/* TV & PS5 (Left Wall) */}
-      <Block position={[-6.5, 0.5, 0]} size={[1, 1, 4]} color="#1e293b" /> {/* Stand */}
-      <Block position={[-6.5, 1.8, 0]} size={[0.2, 1.6, 3]} color="#0f172a" /> {/* TV Screen */}
-      <ClickableBlock position={[-6.5, 1.2, 1.5]} size={[0.4, 0.8, 0.2]} color="#f8fafc" text="Playing Elden Ring" /> {/* PS5 */}
+      {/* Acoustic Guitar (Left Wall) */}
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <AcousticGuitar position={[-6.5, 0, 4]} rotation={[0, Math.PI / 4, 0]} />
+      </Suspense>
 
-      {/* Synth Desk (Top Wall) */}
-      <Block position={[0, 0.8, -6.5]} size={[4, 1, 1]} color="#334155" /> {/* Desk */}
-      <ClickableBlock position={[0, 1.4, -6.5]} size={[2, 0.2, 0.6]} color="#111827" text="Making beats" /> {/* Synth Keyboard */}
-      <Block position={[-1.5, 1.4, -6.5]} size={[0.4, 0.6, 0.4]} color="#cbd5e1" /> {/* Speaker L */}
-      <Block position={[1.5, 1.4, -6.5]} size={[0.4, 0.6, 0.4]} color="#cbd5e1" /> {/* Speaker R */}
+      {/* Bed (Right Wall) */}
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <Bed position={[4, 3.4, -3.2]} rotation={[0, Math.PI, 0]} />
+      </Suspense>
 
-      {/* Sneaker Wall (Right Wall) */}
-      <Block position={[6.5, 1.5, 0]} size={[1, 3, 5]} color="#e2e8f0" />
-      <ClickableBlock position={[6.4, 1, -1]} size={[0.4, 0.3, 0.6]} color="#ef4444" text="Jordan 1 Chicago" />
-      <ClickableBlock position={[6.4, 1.8, 0]} size={[0.4, 0.3, 0.6]} color="#3b82f6" text="Royal Blue Dunk" />
-      <ClickableBlock position={[6.4, 2.6, 1]} size={[0.4, 0.3, 0.6]} color="#10b981" text="Pine Green Runner" />
+      {/* PS5 Gaming Setup (Left Wall) */}
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <PS5GamingSetup position={[-3, 1.8, -7.5]} rotation={[0, 0, 0]} />
+      </Suspense>
     </group>
   );
 }
@@ -471,7 +622,7 @@ function FutureRoom() {
 
       {/* House Plant - coin gauche */}
       <Suspense fallback={<Block position={[-4, 1, 2]} size={[0.8, 1.5, 0.8]} color="#22c55e" />}>
-        <HousePlant position={[-6, 0, 2]} />
+        <HousePlant position={[-6, 0, 6]} />
       </Suspense>
 
       {/* Umbrella Palm - coin droite */}
@@ -492,6 +643,46 @@ function FutureRoom() {
       {/* Wassily Chair */}
       <Suspense fallback={<Block position={[0, 1, 3]} size={[1.5, 1.5, 1.5]} color="#94a3b8" />}>
         <WassilyChair position={[0, 0, -4.5]} />
+      </Suspense>
+
+      {/* Drawer */}
+      <Suspense fallback={<Block position={[4, 1, -4.5]} size={[1.5, 2, 1]} color="#174282ff" />}>
+        <Drawer position={[-6, 0, 0]} rotation={[0, Math.PI / 2, 0]} />
+      </Suspense>
+
+      {/* Record Player */}
+      <Suspense fallback={<Block position={[4, 1, -4.5]} size={[1.5, 2, 1]} color="#505864ff" />}>
+        <RecordPlayer position={[-4.45, 1.6, 1.3]} rotation={[0, Math.PI, 0]} />
+      </Suspense>
+
+      {/* Orchid */}
+      <Suspense fallback={<Block position={[4, 1, -4.5]} size={[1.5, 2, 1]} color="#ec75d8ff" />}>
+        <Orchid position={[-5.85, 1.7, 2]} rotation={[0, Math.PI / 2, 0]} />
+      </Suspense>
+
+      {/* Speaker */}
+      <Suspense fallback={<Block position={[4, 1, -4.5]} size={[1.5, 2, 1]} color="#ec75d8ff" />}>
+        <Speaker position={[-6.2, 0, -3]} rotation={[0, Math.PI / 2, 0]} />
+      </Suspense>
+
+      {/* Speaker */}
+      <Suspense fallback={<Block position={[4, 1, -4.5]} size={[1.5, 2, 1]} color="#ec75d8ff" />}>
+        <Speaker position={[-6.2, 0, 3]} rotation={[0, Math.PI / 2, 0]} />
+      </Suspense>
+
+      {/* Carpet */}
+      <Suspense fallback={<Block position={[-4.5, 0, -4.5]} size={[1.5, 2, 1]} color="#ec75d8ff" />}>
+        <Carpet position={[0, 0.1, 0]} rotation={[0, 0, 0]} />
+      </Suspense>
+
+      {/* Cat */}
+      <Suspense fallback={<Block position={[4, 1, -4.5]} size={[1.5, 2, 1]} color="#ec75d8ff" />}>
+        <Cat position={[3, 0.2, -2]} rotation={[0, Math.PI / 8, 0]} />
+      </Suspense>
+
+      {/* Dog */}
+      <Suspense fallback={<Block position={[4, 1, -4.5]} size={[1.5, 2, 1]} color="#ec75d8ff" />}>
+        <Dog position={[-3, 0.8, -2]} rotation={[0, -Math.PI / 8, 0]} />
       </Suspense>
     </group>
   );
