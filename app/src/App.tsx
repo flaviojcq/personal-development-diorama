@@ -420,7 +420,7 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
     });
   }, [scene]);
   return (
-    <group position={position} rotation={rotation}>
+    <group position={position}>
       <Center bottom>
         <primitive object={scene} scale={0.00003} />
       </Center>
@@ -446,7 +446,7 @@ function Bed({ position, rotation }: { position: [number, number, number], rotat
     });
   }, [scene]);
   return (
-    <group position={position} rotation={rotation}>
+    <group position={position}>
       <Center bottom>
         <primitive object={scene} scale={3.5} />
       </Center>
@@ -496,7 +496,7 @@ function Cat({ position, rotation }: { position: [number, number, number], rotat
   }, [actions]);
 
   return (
-    <group ref={groupRef} position={position} rotation={rotation}>
+    <group ref={groupRef} position={position}>
       <primitive object={scene} scale={0.07} />
     </group>
   );
