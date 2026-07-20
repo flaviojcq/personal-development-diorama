@@ -372,7 +372,7 @@ function WassilyChair({ position }: { position: [number, number, number] }) {
   );
 }
 
-function Monsterra({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function Monsterra({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(monsterraUrl);
   useMemo(() => {
     scene.traverse((child) => {
@@ -382,7 +382,7 @@ function Monsterra({ position, rotation }: { position: [number, number, number],
   return <primitive object={scene} position={position} rotation={rotation} scale={0.7} />;
 }
 
-function Drawer({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function Drawer({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(drawerUrl);
   useMemo(() => {
     scene.traverse((child) => {
@@ -392,7 +392,7 @@ function Drawer({ position, rotation }: { position: [number, number, number], ro
   return <primitive object={scene} position={position} rotation={rotation} scale={1.2} />;
 }
 
-function RecordPlayer({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function RecordPlayer({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(recordPLayerUrl);
   useMemo(() => {
     scene.traverse((child) => {
@@ -402,7 +402,7 @@ function RecordPlayer({ position, rotation }: { position: [number, number, numbe
   return <primitive object={scene} position={position} rotation={rotation} scale={0.001} />;
 }
 
-function Orchid({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function Orchid({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(orchidUrl);
   useMemo(() => {
     scene.traverse((child) => {
@@ -412,7 +412,7 @@ function Orchid({ position, rotation }: { position: [number, number, number], ro
   return <primitive object={scene} position={position} rotation={rotation} scale={0.15} />;
 }
 
-function Piano({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function Piano({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(pianoUrl);
   useMemo(() => {
     scene.traverse((child) => {
@@ -420,7 +420,7 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
     });
   }, [scene]);
   return (
-    <group position={position}>
+    <group position={position} rotation={rotation}>
       <Center bottom>
         <primitive object={scene} scale={0.00003} />
       </Center>
@@ -428,7 +428,7 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
   );
 }
 
-function AcousticGuitar({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function AcousticGuitar({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(acousticGuitarUrl);
   useMemo(() => {
     scene.traverse((child) => {
@@ -438,7 +438,7 @@ function AcousticGuitar({ position, rotation }: { position: [number, number, num
   return <primitive object={scene} position={position} rotation={rotation} scale={0.085} />;
 }
 
-function Bed({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function Bed({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(bedUrl);
   useMemo(() => {
     scene.traverse((child) => {
@@ -446,7 +446,7 @@ function Bed({ position, rotation }: { position: [number, number, number], rotat
     });
   }, [scene]);
   return (
-    <group position={position}>
+    <group position={position} rotation={rotation}>
       <Center bottom>
         <primitive object={scene} scale={3.5} />
       </Center>
@@ -454,7 +454,7 @@ function Bed({ position, rotation }: { position: [number, number, number], rotat
   );
 }
 
-function Speaker({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function Speaker({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(speakerUrl);
   const clonedScene = useMemo(() => {
     const clone = scene.clone();
@@ -466,7 +466,7 @@ function Speaker({ position, rotation }: { position: [number, number, number], r
   return <primitive object={clonedScene} position={position} rotation={rotation} scale={2} />;
 }
 
-function Carpet({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function Carpet({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(carpetUrl);
   useMemo(() => {
     scene.traverse((child) => {
@@ -476,7 +476,7 @@ function Carpet({ position, rotation }: { position: [number, number, number], ro
   return <primitive object={scene} position={position} rotation={rotation} scale={2.6} />;
 }
 
-function Cat({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function Cat({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const groupRef = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(catUrl);
   const { actions } = useAnimations(animations, groupRef);
@@ -496,13 +496,13 @@ function Cat({ position, rotation }: { position: [number, number, number], rotat
   }, [actions]);
 
   return (
-    <group ref={groupRef} position={position}>
+    <group ref={groupRef} position={position} rotation={rotation}>
       <primitive object={scene} scale={0.07} />
     </group>
   );
 }
 
-function Dog({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function Dog({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(dogUrl);
   useMemo(() => {
     scene.traverse((child) => {
@@ -512,7 +512,7 @@ function Dog({ position, rotation }: { position: [number, number, number], rotat
   return <primitive object={scene} position={position} rotation={rotation} scale={2.2} />;
 }
 
-function PS5GamingSetup({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] | number[] }) {
+function PS5GamingSetup({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
   const { scene } = useGLTF(ps5GamingSetupUrl);
   useMemo(() => {
     scene.traverse((child) => {
