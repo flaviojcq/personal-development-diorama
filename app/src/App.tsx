@@ -13,13 +13,18 @@ import drawerUrl from '../public/models/drawer.glb?url';
 import recordPLayerUrl from '../public/models/record_player.glb?url';
 import orchidUrl from '../public/models/orchid.glb?url';
 import pianoUrl from '../public/models/piano.glb?url';
-import acousticGuitarUrl from '../public/models/acoustic_guitar.glb?url';
 import speakerUrl from '../public/models/speaker.glb?url';
 import bedUrl from '../public/models/bed.glb?url';
 import carpetUrl from '../public/models/persian_carpet.glb?url';
 import catUrl from '../public/models/an_animated_cat.glb?url';
 import dogUrl from '../public/models/bullcat.glb?url';
 import ps5GamingSetupUrl from '../public/models/ps5_gaming_setup.glb?url';
+import officeChairUrl from '../public/models/office_chair.glb?url';
+import shoeRackUrl from '../public/models/shoe_rack.glb?url';
+import aj1Chicagourl from '../public/models/aj1_chicago.glb?url';
+import nikeShoeBoxUrl from '../public/models/nike_shoe_box.glb?url';
+import floorLampUrl from '../public/models/floor_lamp.glb?url';
+import bookUrl from '../public/models/book.glb?url';
 import './index.css';
 
 // --- Types & Constants ---
@@ -413,29 +418,80 @@ function Orchid({ position, rotation }: { position: [number, number, number], ro
 }
 
 function Piano({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
   const { scene } = useGLTF(pianoUrl);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+  const text = "My dream piano 🎹";
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
   useMemo(() => {
     scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#c084fc");
+          mat.emissiveIntensity = 0;
+        }
+      }
     });
   }, [scene]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    let targetY = position[1];
+    if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.05 + 0.05;
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
+    const targetGlow = clicked ? 0.6 : (hovered ? 0.3 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.15);
+      }
+    });
+  });
+
   return (
-    <group position={position} rotation={rotation}>
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
       <Center bottom>
         <primitive object={scene} scale={0.00003} />
       </Center>
+      <pointLight position={[0, 1, 0]} distance={5} intensity={clicked ? 1.0 : (hovered ? 0.5 : 0)} color="#c084fc" />
+      {clicked && (
+        <Html position={[0, 4, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">{text}</div>
+        </Html>
+      )}
     </group>
   );
-}
-
-function AcousticGuitar({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
-  const { scene } = useGLTF(acousticGuitarUrl);
-  useMemo(() => {
-    scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
-    });
-  }, [scene]);
-  return <primitive object={scene} position={position} rotation={rotation} scale={0.085} />;
 }
 
 function Bed({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
@@ -513,13 +569,302 @@ function Dog({ position, rotation }: { position: [number, number, number], rotat
 }
 
 function PS5GamingSetup({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
   const { scene } = useGLTF(ps5GamingSetupUrl);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+  const text = "My PS5 gaming setup 🎮";
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#38bdf8");
+          mat.emissiveIntensity = 0;
+        }
+      }
+    });
+  }, [scene]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    let targetY = position[1];
+    if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.05 + 0.05;
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
+    const targetGlow = clicked ? 0.5 : (hovered ? 0.25 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.15);
+      }
+    });
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <primitive object={scene} scale={0.6} />
+      <pointLight position={[0, 1, 0]} distance={5} intensity={clicked ? 1.0 : (hovered ? 0.5 : 0)} color="#38bdf8" />
+      {clicked && (
+        <Html position={[0, 3, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">{text}</div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function OfficeChair({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const { scene } = useGLTF(officeChairUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={0.025} />;
+}
+
+function ShoeRack({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const { scene } = useGLTF(shoeRackUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={4} />;
+}
+
+function AJ1Chicago({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const { scene } = useGLTF(aj1Chicagourl);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+  const text = "Air Jordan 1 Chicago — the grail 🐂";
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#ef4444");
+          mat.emissiveIntensity = 0;
+        }
+      }
+    });
+  }, [scene]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    let targetY = position[1];
+    if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.05 + 0.05;
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
+    // Slow rotation on hover for the sneaker showcase effect
+    if (hovered) groupRef.current.rotation.y += 0.008;
+    const targetGlow = clicked ? 0.6 : (hovered ? 0.3 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.15);
+      }
+    });
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <Center>
+        <primitive object={scene} scale={4.5} />
+      </Center>
+      <pointLight position={[0, 0.5, 0]} distance={4} intensity={clicked ? 1.2 : (hovered ? 0.6 : 0)} color="#ef4444" />
+      {clicked && (
+        <Html position={[0, 1.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">{text}</div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function NikeShoeBox({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const { scene } = useGLTF(nikeShoeBoxUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return <primitive object={scene} position={position} rotation={rotation} scale={3.5} />;
+}
+
+function FloorLamp({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const { scene } = useGLTF(floorLampUrl);
   useMemo(() => {
     scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
     });
   }, [scene]);
   return <primitive object={scene} position={position} rotation={rotation} scale={0.6} />;
+}
+
+function Book({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const { scene } = useGLTF(bookUrl);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+  const text = "Currently reading: Atomic Habits 📖";
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#edc24bff");
+          mat.emissiveIntensity = 0.08; // petit glow permanent dès le départ
+        }
+      }
+    });
+  }, [scene]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+
+    // Flottement léger en idle (respiration douce), plus fort au survol
+    const idleFloat = Math.sin(state.clock.elapsedTime * 1.5) * 0.015;
+    let targetY = position[1] + idleFloat;
+    if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06;
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
+
+    // Emissive : toujours allumé légèrement, plus fort au survol/clic
+    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0.08);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+      }
+    });
+
+    // Pulsation du halo de lumière
+    if (lightRef.current) {
+      if (clicked) {
+        // Stable et fort au clic
+        lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
+      } else if (hovered) {
+        // Pulsation rapide au survol
+        lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
+      } else {
+        // Pulsation douce en idle (clignotement lent)
+        lightRef.current.intensity = 0.18 + Math.sin(state.clock.elapsedTime * 2.2) * 0.1;
+      }
+    }
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <primitive object={scene} scale={1} />
+
+      {/* Halo permanent avec pulsation */}
+      <pointLight
+        ref={lightRef}
+        position={[0, 0.3, 0]}
+        color="#edc24bff"
+        intensity={0.2}
+        distance={3}
+        decay={2}
+      />
+
+      {clicked && (
+        <Html position={[0, 1.2, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">{text}</div>
+        </Html>
+      )}
+    </group>
+  );
 }
 
 function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", hasWalls = false, isParquet = false, shape = 'square', yOffset = 0 }: { position: [number, number, number], size: [number, number], floorColor?: string, wallColor?: string, hasWalls?: boolean, isParquet?: boolean, shape?: 'square' | 'circle', yOffset?: number }) {
@@ -594,11 +939,6 @@ function PresentRoom() {
         <Piano position={[-5.8, 3, 0]} rotation={[0, -2 * Math.PI / 4.3, 0]} />
       </Suspense>
 
-      {/* Acoustic Guitar (Left Wall) */}
-      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
-        <AcousticGuitar position={[-6.5, 0, 4]} rotation={[0, Math.PI / 4, 0]} />
-      </Suspense>
-
       {/* Bed (Right Wall) */}
       <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
         <Bed position={[4, 3.4, -3.2]} rotation={[0, Math.PI, 0]} />
@@ -607,6 +947,32 @@ function PresentRoom() {
       {/* PS5 Gaming Setup (Left Wall) */}
       <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
         <PS5GamingSetup position={[-3, 1.8, -7.5]} rotation={[0, 0, 0]} />
+      </Suspense>
+
+      {/* Office Chair (Left Wall) */}
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <OfficeChair position={[-4, 0, -3.5]} rotation={[0, 800, 0]} />
+      </Suspense>
+
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <ShoeRack position={[-2, 0, 6.3]} rotation={[0, Math.PI, 0]} />
+      </Suspense>
+
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <AJ1Chicago position={[-2, 2.2, 6.3]} rotation={[0, Math.PI / 2, 0]} />
+      </Suspense>
+
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <NikeShoeBox position={[1, 0, 6.1]} rotation={[0, - Math.PI / 8, 0]} />
+      </Suspense>
+
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <FloorLamp position={[-5.5, 4, 6.2]} rotation={[0, Math.PI, 0]} />
+      </Suspense>
+
+      {/* Book on the bed */}
+      <Suspense fallback={<Block position={[4, 5, -3.2]} size={[0.5, 0.1, 0.3]} color="#8b5cf6" />}>
+        <Book position={[4, 1.7, -2.5]} rotation={[0, Math.PI / 5, 0]} />
       </Suspense>
     </group>
   );
@@ -809,7 +1175,16 @@ function App() {
         </div>
       </div>
 
-      <Canvas shadows gl={{ antialias: false }} dpr={0.5}>
+      <Canvas
+        shadows
+        gl={{
+          antialias: false,
+          toneMapping: THREE.LinearToneMapping,
+          outputColorSpace: THREE.SRGBColorSpace,
+        }}
+        dpr={0.5}
+        onPointerMissed={() => window.dispatchEvent(new CustomEvent('block-clicked', { detail: null }))}
+      >
         <OrthographicCamera makeDefault position={[15, 15, 15]} zoom={40} />
         {/* Lower ambient light for better shadow contrast */}
         <ambientLight intensity={0.3} color="#ffffff" />
