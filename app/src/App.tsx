@@ -3,6 +3,12 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrthographicCamera, useTexture, Html, useGLTF, Center, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import lightParquetUrl from './assets/light_parquet.jpg';
+import lightParquetArrowUrl from './assets/light_parquet_arrow.jpg';
+import darkParquetUrl from './assets/dark_parquet_3.jpg';
+import moquetteUrl from './assets/moquette.webp';
+import woodShelfUrl from '../public/models/wood_shelf.glb?url';
+import lavaLampUrl from '../public/models/lava_lamp.glb?url';
+import jeepUrl from '../public/models/jeep.glb?url';
 import fiddleLeafUrl from '../public/models/fiddle_leaf_plant.glb?url';
 import housePlantUrl from '../public/models/house_plant.glb?url';
 import umbrellapalmUrl from '../public/models/umbrella_palm.glb?url';
@@ -25,6 +31,10 @@ import aj1Chicagourl from '../public/models/aj1_chicago.glb?url';
 import nikeShoeBoxUrl from '../public/models/nike_shoe_box.glb?url';
 import floorLampUrl from '../public/models/floor_lamp.glb?url';
 import bookUrl from '../public/models/book.glb?url';
+import roundChairUrl from '../public/models/round_chair.glb?url';
+import legoStarWarsATATUrl from '../public/models/lego_star_wars_at_at.glb?url';
+import legoStarWarsIIIAATUrl from '../public/models/lego_star_wars_iii_aat.glb?url';
+import draftingTableUrl from '../public/models/drafting_table.glb?url';
 import './index.css';
 
 // --- Types & Constants ---
@@ -47,20 +57,62 @@ const BUILD_AREAS = [
 
 // Define obstacles to restrict movement
 export const OBSTACLES = [
-  // Past Room
-  { id: 'past_toy_shelf', x: -20, y: 1, z: -6.5, width: 4, height: 2, depth: 1 },
-  { id: 'past_drawings_wall', x: -26.5, y: 1.5, z: 0, width: 1, height: 3, depth: 4 },
-  { id: 'past_play_table', x: -20, y: 0.5, z: 2, width: 3, height: 1, depth: 3 },
+  // --- Past Room (group offset: x:-20, z:0) ---
+  // RoundChair: local [-5, -5] → global [-25, -5]
+  { id: 'past_round_chair', x: -25, y: 0, z: -5, width: 3.2, height: 2, depth: 3.2 },
+  // WoodShelf: local [-6.5, 0] → global [-26.5, 0]
+  { id: 'past_wood_shelf', x: -26.5, y: 0, z: 0, width: 2.2, height: 3, depth: 5 },
+  // DraftingTable:
+  { id: 'past_drafting_table', x: -16, y: 0, z: -5.3, width: 4, height: 2, depth: 2.5 },
+  // DraftingTableChair:
+  { id: 'past_drafting_table_chair', x: -16.6, y: 0, z: -3, width: 1, height: 2, depth: 1 },
+  // Jeep: local [-5, 5] → global [-25, 5]
+  { id: 'past_jeep', x: -25, y: 0, z: 5, width: 3, height: 2, depth: 4 },
 
-  // Present Room (-20, -20)
-  { id: 'present_tv_stand', x: -26.5, y: 0.5, z: -20, width: 1, height: 1, depth: 4 },
-  { id: 'present_synth_desk', x: -20, y: 0.8, z: -26.5, width: 4, height: 1, depth: 1 },
-  { id: 'present_sneaker_wall', x: -13.5, y: 1.5, z: -20, width: 1, height: 3, depth: 5 },
+  // --- Present Room (group offset: x:-20, z:-20) ---
+  // Piano: local [-5.8, 0] → global [-25.8, -20]
+  { id: 'present_piano', x: -26.3, y: 0, z: -20, width: 1.5, height: 2, depth: 3.8 },
+  // Piano Chair:
+  { id: 'present_piano_chair', x: -25, y: 0, z: -20, width: 1, height: 2, depth: 1.9 },
+  // Bed: local [4, -3.2] → global [-16, -23.2]
+  { id: 'present_bed', x: -16, y: 0, z: -23.2, width: 6.6, height: 4, depth: 7 },
+  // PS5 Gaming Setup: local [-3, -7.5] → global [-23, -27.5]
+  { id: 'present_ps5', x: -22.8, y: 0, z: -26, width: 4.3, height: 2, depth: 2.7 },
+  // OfficeChair: local [-4, -3.5] → global [-24, -23.5]
+  { id: 'present_office_chair', x: -24, y: 0, z: -23.5, width: 2, height: 2, depth: 2 },
+  // ShoeRack + AJ1: local [-2, 6.3] → global [-22, -13.7]
+  { id: 'present_shoe_rack', x: -22, y: 0, z: -13.7, width: 3.5, height: 2, depth: 1.5 },
+  // ShoeBox + AJ1: local [-2, 6.3] → global [-22, -13.7]
+  { id: 'present_shoe_box', x: -19, y: 0, z: -13.7, width: 2, height: 1, depth: 1.5 },
+  // FloorLamp: local [-5.5, 6.2] → global [-25.5, -13.8]
+  { id: 'present_floor_lamp', x: -25.5, y: 0, z: -13.8, width: 1, height: 3, depth: 1 },
 
-  // Future Room (0, -20)
-  { id: 'future_plant_wall', x: 0, y: 1.5, z: -26.5, width: 4, height: 3, depth: 1 },
-  { id: 'future_coffee_bar', x: 6.5, y: 1, z: -20, width: 1, height: 2, depth: 4 },
+  // --- Future Room (group offset: x:0, z:-20) ---
+  // FiddleLeafPlant: local [-6, -6] → global [-6, -26]
+  { id: 'future_fiddle_leaf', x: -6, y: 0, z: -26, width: 1.5, height: 3, depth: 1.5 },
+  // HousePlant: local [-6, 6] → global [-6, -14]
+  { id: 'future_house_plant', x: -6, y: 0, z: -14, width: 1.5, height: 2, depth: 1.5 },
+  // UmbrellaPalm: local [6.5, -6] → global [6.5, -26]
+  { id: 'future_umbrella_palm', x: 6.5, y: 0, z: -26, width: 1.5, height: 3, depth: 1.5 },
+  // BirdsOfParadise: local [-1, -6] → global [-1, -26]
+  { id: 'future_birds_paradise', x: -1, y: 0, z: -26, width: 1.5, height: 2, depth: 1.5 },
+  // Monsterra: local [-4.5, -6] → global [-4.5, -26]
+  { id: 'future_monsterra', x: -4.5, y: 0, z: -26, width: 1.5, height: 2, depth: 1.5 },
+  // WassilyChair: local [0, -4.5] → global [0, -24.5]
+  { id: 'future_wassily_chair', x: 1.5, y: 0, z: -25.5, width: 2.3, height: 2, depth: 2.3 },
+  // Drawer: local [-6, 0] → global [-6, -20]
+  { id: 'future_drawer', x: -6, y: 0, z: -20, width: 1.5, height: 2, depth: 4.5 },
+  // Speaker Left: local [-6.2, -3] → global [-6.2, -23]
+  { id: 'future_speaker_left', x: -6.2, y: 0, z: -23, width: 1, height: 1.5, depth: 1 },
+  // Speaker Right: local [-6.2, 3] → global [-6.2, -17]
+  { id: 'future_speaker_right', x: -6.2, y: 0, z: -17, width: 1, height: 1.5, depth: 1 },
+  // Dog:
+  { id: 'future_dog', x: -3, y: 0, z: -22, width: 1.5, height: 2, depth: 1.5 },
+  // Cat:
+  { id: 'future_cat', x: 3, y: 0, z: -22, width: 1.5, height: 2, depth: 1.5 },
 ];
+
+
 
 function inDiagonalCorridor(x: number, z: number) {
   const width = 2.0; // half-width
@@ -226,8 +278,8 @@ function ClickableBlock({ position, size, color, text }: { position: [number, nu
   );
 }
 
-function ParquetFloorMaterial({ size }: { size: [number, number] }) {
-  const texture = useTexture(lightParquetUrl);
+function ParquetFloorMaterial({ size, url = lightParquetUrl }: { size: [number, number], url?: string }) {
+  const texture = useTexture(url);
 
   const clonedTexture = useMemo(() => {
     const t = texture.clone();
@@ -797,7 +849,7 @@ function Book({ position, rotation }: { position: [number, number, number], rota
           mesh.material = (mesh.material as THREE.Material).clone();
           const mat = mesh.material as THREE.MeshStandardMaterial;
           mat.emissive = new THREE.Color("#edc24bff");
-          mat.emissiveIntensity = 0.08; // petit glow permanent dès le départ
+          mat.emissiveIntensity = 0;
         }
       }
     });
@@ -807,13 +859,11 @@ function Book({ position, rotation }: { position: [number, number, number], rota
     if (!groupRef.current) return;
 
     // Flottement léger en idle (respiration douce), plus fort au survol
-    const idleFloat = Math.sin(state.clock.elapsedTime * 1.5) * 0.015;
-    let targetY = position[1] + idleFloat;
-    if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06;
+    const targetY = hovered ? position[1] + Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : position[1];
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
 
     // Emissive : toujours allumé légèrement, plus fort au survol/clic
-    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0.08);
+    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
     scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
@@ -831,8 +881,8 @@ function Book({ position, rotation }: { position: [number, number, number], rota
         // Pulsation rapide au survol
         lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
       } else {
-        // Pulsation douce en idle (clignotement lent)
-        lightRef.current.intensity = 0.18 + Math.sin(state.clock.elapsedTime * 2.2) * 0.1;
+        // Plus de pulsation en idle
+        lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
       }
     }
   });
@@ -867,7 +917,397 @@ function Book({ position, rotation }: { position: [number, number, number], rota
   );
 }
 
-function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", hasWalls = false, isParquet = false, shape = 'square', yOffset = 0 }: { position: [number, number, number], size: [number, number], floorColor?: string, wallColor?: string, hasWalls?: boolean, isParquet?: boolean, shape?: 'square' | 'circle', yOffset?: number }) {
+function RoundChair({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const { scene } = useGLTF(roundChairUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return (
+    <group position={position} rotation={rotation}>
+      <Center bottom>
+        <primitive object={scene} scale={0.08} />
+      </Center>
+    </group>
+  );
+}
+
+function LegoStarWarsATAT({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+  const { scene, animations } = useGLTF(legoStarWarsATATUrl);
+  const { actions } = useAnimations(animations, groupRef);
+
+  const text = "Lego Star Wars AT-AT 👾";
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#ffffff");
+          mat.emissiveIntensity = 0;
+        }
+      }
+    });
+  }, [scene]);
+
+  useEffect(() => {
+    const firstAction = Object.values(actions)[0];
+    if (firstAction) {
+      firstAction.reset().play();
+    }
+  }, [actions]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const targetY = hovered ? position[1] + Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : position[1];
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
+
+    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+      }
+    });
+
+    if (lightRef.current) {
+      if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
+      else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+    }
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <primitive object={scene} scale={0.2} />
+      <pointLight ref={lightRef} position={[0, 1, 0]} distance={5} intensity={0} color="#ffffff" />
+      {clicked && (
+        <Html position={[0, 3, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">{text}</div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function LegoStarWarsIIIAAT({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const { scene } = useGLTF(legoStarWarsIIIAATUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return (
+    <group position={position} rotation={rotation}>
+      <Center bottom>
+        <primitive object={scene} scale={0.7} />
+      </Center>
+    </group>
+  );
+}
+
+function DraftingTable({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+  const { scene } = useGLTF(draftingTableUrl);
+
+  const text = "Drafting Table ✏️";
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#fbcfe8");
+          mat.emissiveIntensity = 0;
+        }
+      }
+    });
+  }, [scene]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const targetY = hovered ? position[1] + Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : position[1];
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
+
+    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+      }
+    });
+
+    if (lightRef.current) {
+      if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
+      else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+    }
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <Center bottom>
+        <primitive object={scene} scale={0.8} />
+      </Center>
+      <pointLight ref={lightRef} position={[0, 1, 0]} distance={5} intensity={0} color="#fbcfe8" />
+      {clicked && (
+        <Html position={[0, 3, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">{text}</div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function WoodShelf({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const { scene } = useGLTF(woodShelfUrl);
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+  }, [scene]);
+  return (
+    <group position={position} rotation={rotation}>
+      <Center bottom>
+        <primitive object={scene} scale={1.2} />
+      </Center>
+    </group>
+  );
+}
+
+function LavaLamp({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+  const { scene } = useGLTF(lavaLampUrl);
+
+  const text = "Lava Lamp 🔥";
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#ef4444");
+          mat.emissiveIntensity = 0;
+        }
+      }
+    });
+  }, [scene]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const targetY = hovered ? position[1] + Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : position[1];
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
+
+    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+      }
+    });
+
+    if (lightRef.current) {
+      if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
+      else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+    }
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <Center bottom>
+        <primitive object={scene} scale={0.2} />
+      </Center>
+      <pointLight ref={lightRef} position={[0, 1, 0]} distance={5} intensity={0} color="#ef4444" />
+      {clicked && (
+        <Html position={[0, 2, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">{text}</div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function Jeep({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+  const { scene } = useGLTF(jeepUrl);
+
+  const text = "Jeep 🚙";
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#22c55e");
+          mat.emissiveIntensity = 0;
+        }
+      }
+    });
+  }, [scene]);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const targetY = hovered ? position[1] + Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : position[1];
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
+
+    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+      }
+    });
+
+    if (lightRef.current) {
+      if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
+      else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+    }
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <Center bottom>
+        <primitive object={scene} scale={0.65} />
+      </Center>
+      <pointLight ref={lightRef} position={[0, 1, 0]} distance={5} intensity={0} color="#22c55e" />
+      {clicked && (
+        <Html position={[0, 2, 0]} center zIndexRange={[100, 0]}>
+          <div className="clickable-text">{text}</div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function Room({ position, size, floorColor = "#dfcbb7", wallColor = "#ffffff", wallColorRight, hasWalls = false, isParquet = false, parquetUrl, shape = 'square', yOffset = 0 }: { position: [number, number, number], size: [number, number], floorColor?: string, wallColor?: string, wallColorRight?: string, hasWalls?: boolean, isParquet?: boolean, parquetUrl?: string, shape?: 'square' | 'circle', yOffset?: number }) {
   return (
     <group position={position}>
       <mesh position={[0, -0.25 + yOffset, 0]} receiveShadow>
@@ -878,7 +1318,7 @@ function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", h
         )}
         {isParquet ? (
           <Suspense fallback={<meshStandardMaterial color="#2d2d2d" />}>
-            <ParquetFloorMaterial size={size} />
+            <ParquetFloorMaterial size={size} url={parquetUrl} />
           </Suspense>
         ) : (
           <meshStandardMaterial color={floorColor} />
@@ -896,7 +1336,7 @@ function Room({ position, size, floorColor = "#c29469", wallColor = "#ffffff", h
           {/* Back-Right Wall (x-axis) */}
           <mesh position={[-0.25, 1.75, -size[1] / 2 - 0.25]} receiveShadow>
             <boxGeometry args={[size[0] + 0.5, 4.5, 0.5]} />
-            <meshStandardMaterial color={wallColor} />
+            <meshStandardMaterial color={wallColorRight || wallColor} />
           </mesh>
         </>
       )}
@@ -910,23 +1350,42 @@ function PastRoom() {
   return (
     <group position={[-20, 0, 0]}>
       {/* Light for warm atmosphere */}
-      <pointLight position={[0, 4, 0]} intensity={0.8} color="#fcd34d" distance={15} castShadow />
+      <pointLight position={[0, 4, 0]} intensity={0.8} color="#fc4d4d" distance={15} castShadow />
 
-      {/* Toy Shelf (Top Wall) */}
-      <Block position={[0, 1, -6.5]} size={[4, 2, 1]} color="#8b5cf6" />
-      {/* Toys on shelf */}
-      <ClickableBlock position={[-1, 2.2, -6.5]} size={[0.4, 0.4, 0.4]} color="#ef4444" text="My first fire truck" />
-      <ClickableBlock position={[0, 2.2, -6.5]} size={[0.8, 0.4, 0.4]} color="#eab308" text="Wooden blocks" />
-      <ClickableBlock position={[1, 2.3, -6.5]} size={[0.6, 0.6, 0.6]} color="#3b82f6" text="Action figure" />
+      {/* Round Chair (Top Wall) */}
+      <Suspense fallback={<Block position={[3, 1, -6.5]} size={[2, 2, 1]} color="#1e1e1e" />}>
+        <RoundChair position={[-5, 2.5, -5]} rotation={[0, Math.PI / 4, 0]} />
+      </Suspense>
 
-      {/* Drawings Wall (Left Wall) */}
-      <Block position={[-6.5, 1.5, 0]} size={[1, 3, 4]} color="#fdf8f6" />
-      <Block position={[-6.4, 1.5, 0]} size={[0.1, 0.8, 1]} color="#f43f5e" />
-      <Block position={[-6.4, 2, -1]} size={[0.1, 0.6, 0.8]} color="#10b981" />
+      {/* Lego Star Wars AT-AT */}
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <LegoStarWarsATAT position={[-6, 1.7, 1.8]} rotation={[0, Math.PI / 3, 0]} />
+      </Suspense>
 
-      {/* Play Table */}
-      <Block position={[0, 0.5, 2]} size={[3, 1, 3]} color="#fb923c" />
-      <Block position={[0, 1.1, 2]} size={[1.5, 0.2, 1.5]} color="#22c55e" /> {/* Playmat/Board */}
+      {/* Lego Star Wars III AAT */}
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <LegoStarWarsIIIAAT position={[-6.2, 2.6, -1.2]} rotation={[0, Math.PI, 0]} />
+      </Suspense>
+
+      {/* Drafting Table (Front Wall) */}
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <DraftingTable position={[4, 3.7, -4.8]} rotation={[0, Math.PI, 0]} />
+      </Suspense>
+
+      {/* Wood Shelf (Left Wall) */}
+      <Suspense fallback={<Block position={[-6.5, 1, 0]} size={[1, 2, 1]} color="#d97706" />}>
+        <WoodShelf position={[-6.5, 1.68, 0]} rotation={[0, Math.PI / 2, 0]} />
+      </Suspense>
+
+      {/* Lava Lamp */}
+      <Suspense fallback={null}>
+        <LavaLamp position={[-6.2, 3, 0.2]} />
+      </Suspense>
+
+      {/* Jeep */}
+      <Suspense fallback={null}>
+        <Jeep position={[-5, 1.7, 5]} rotation={[0, Math.PI / 8, 0]} />
+      </Suspense>
     </group>
   );
 }
@@ -1059,8 +1518,8 @@ function Apartment() {
     <group>
       {/* Floors */}
       <Room position={[0, 0, 0]} size={[12, 12]} floorColor="#e5e5e5" shape="circle" /> {/* Me Room (Neutral) */}
-      <Room position={[-20, 0, 0]} size={[14, 14]} floorColor="#fed7aa" hasWalls={true} /> {/* Past (Warm) */}
-      <Room position={[-20, 0, -20]} size={[14, 14]} floorColor="#94a3b8" hasWalls={true} /> {/* Present (Modern) */}
+      <Room position={[-20, 0, 0]} size={[14, 14]} floorColor="#e3cea6" wallColor="#f1f5f9" wallColorRight="#f1f5f9" hasWalls={true} isParquet={true} parquetUrl={moquetteUrl} /> {/* Past */}
+      <Room position={[-20, 0, -20]} size={[14, 14]} floorColor="#94a3b8" hasWalls={true} isParquet={true} parquetUrl={darkParquetUrl} /> {/* Present (Modern) */}
       <Room position={[0, 0, -20]} size={[14, 14]} hasWalls={true} isParquet={true} /> {/* Future (Nature/Warm Parquet) */}
 
       {/* Corridors */}
