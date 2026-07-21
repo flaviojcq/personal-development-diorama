@@ -3,7 +3,6 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrthographicCamera, useTexture, Html, useGLTF, Center, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import lightParquetUrl from './assets/light_parquet.jpg';
-import lightParquetArrowUrl from './assets/light_parquet_arrow.jpg';
 import darkParquetUrl from './assets/dark_parquet_3.jpg';
 import moquetteUrl from './assets/moquette.webp';
 import woodShelfUrl from '../public/models/wood_shelf.glb?url';
@@ -191,92 +190,6 @@ function Block({ position, size, color }: { position: [number, number, number], 
   );
 }
 
-function ClickableBlock({ position, size, color, text }: { position: [number, number, number], size: [number, number, number], color: string, text: string }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
-  const [clicked, setClicked] = useState(false);
-
-  // Écouter les clics sur les autres blocs pour se fermer automatiquement
-  useEffect(() => {
-    const handleOtherClick = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail !== text) {
-        setClicked(false);
-      }
-    };
-    window.addEventListener('block-clicked', handleOtherClick);
-    return () => window.removeEventListener('block-clicked', handleOtherClick);
-  }, [text]);
-
-  const handleClick = (e: any) => {
-    e.stopPropagation();
-    const willBeClicked = !clicked;
-    setClicked(willBeClicked);
-    if (willBeClicked) {
-      window.dispatchEvent(new CustomEvent('block-clicked', { detail: text }));
-    } else {
-      window.dispatchEvent(new CustomEvent('block-clicked', { detail: null }));
-    }
-  };
-
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
-
-  // Animation de flottement au survol et pulsation lumineuse
-  useFrame((state) => {
-    if (!meshRef.current) return;
-
-    // Hauteur de base
-    let targetY = position[1];
-
-    // Ajout d'un petit saut/flottement au survol
-    if (hovered) {
-      targetY += Math.sin(state.clock.elapsedTime * 6) * 0.15 + 0.1;
-    }
-
-    // Interpolation fluide vers la position cible
-    meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, targetY, 0.2);
-
-    // Ajustement de la lumière (sans pulsation)
-    if (materialRef.current) {
-      const targetGlow = clicked ? 1.0 : (hovered ? 0.5 : 0.25);
-      materialRef.current.emissiveIntensity = THREE.MathUtils.lerp(materialRef.current.emissiveIntensity, targetGlow, 0.15);
-    }
-  });
-
-  return (
-    <mesh
-      ref={meshRef}
-      position={position}
-      castShadow
-      receiveShadow
-      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
-      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
-      onClick={handleClick}
-    >
-      <boxGeometry args={size} />
-
-      {/* Matériau avec l'effet emissive ajusté dynamiquement */}
-      <meshStandardMaterial
-        ref={materialRef}
-        color={color}
-        emissive={color}
-        emissiveIntensity={0.25}
-      />
-
-      {/* Lumière ambiante autour de l'objet qui augmente au clic */}
-      <pointLight distance={3} intensity={clicked ? 1.0 : (hovered ? 0.6 : 0.3)} color={color} />
-
-      {/* Texte au clic */}
-      {clicked && (
-        <Html position={[0, size[1] / 2 + 1.2, 0]} center zIndexRange={[100, 0]}>
-          <div className="clickable-text">
-            {text}
-          </div>
-        </Html>
-      )}
-    </mesh>
-  );
-}
 
 function ParquetFloorMaterial({ size, url = lightParquetUrl }: { size: [number, number], url?: string }) {
   const texture = useTexture(url);
