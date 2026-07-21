@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrthographicCamera, useTexture, Html, useGLTF, Center, useAnimations } from '@react-three/drei';
+import { OrthographicCamera, useTexture, Html, useGLTF, Center, useAnimations, Bvh } from '@react-three/drei';
 import * as THREE from 'three';
 import lightParquetUrl from './assets/light_parquet.jpg';
 import darkParquetUrl from './assets/dark_parquet_3.jpg';
@@ -1571,8 +1571,10 @@ function App() {
           shadow-camera-bottom={-30}
         />
 
-        <Apartment />
-        <Player setZone={setZone} />
+        <Bvh firstHitOnly>
+          <Apartment />
+          <Player setZone={setZone} />
+        </Bvh>
       </Canvas>
     </>
   );
