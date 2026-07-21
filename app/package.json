@@ -10,7 +10,6 @@
     "preview": "node node_modules/vite/bin/vite.js preview"
   },
   "dependencies": {
-    "@img/sharp-win32-x64": "^0.35.3",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@types/three": "^0.185.1",
@@ -19,15 +18,11 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
-    "@gltf-transform/core": "^4.4.1",
-    "@gltf-transform/extensions": "^4.4.1",
-    "@gltf-transform/functions": "^4.4.1",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
-    "sharp": "^0.35.3",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }
