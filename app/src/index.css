@@ -195,4 +195,137 @@ canvas {
   font-size: 0.95rem;
   line-height: 1.6;
   animation: fadeIn 0.3s ease;
+}.loading-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #111111; /* Dark background */
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #ffffff;
+  transition: opacity 0.8s ease-in-out, visibility 0.8s;
+}
+
+.loading-screen--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loading-screen__container {
+  max-width: 600px;
+  text-align: center;
+  padding: 2rem;
+}
+
+.loading-screen__title {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.loading-screen__progress {
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.loading-screen__bar-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.loading-screen__bar {
+  height: 100%;
+  background: #f59e0b;
+  transition: width 0.2s ease-out;
+}
+
+.loading-screen__intro {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.loading-screen__intro p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  color: #e2e8f0;
+}
+
+.loading-screen__hint {
+  font-style: italic;
+  color: #94a3b8;
+  margin-bottom: 2rem !important;
+}
+
+.loading-screen__button {
+  background: #f59e0b;
+  color: #111111;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+  font-family: 'Outfit', sans-serif;
+}
+
+.loading-screen__button:hover {
+  background: #fbbf24;
+  transform: translateY(-2px);
+}
+
+/* Found Counter UI */
+.found-counter {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(40, 30, 25, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 180, 100, 0.2);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  color: white;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.found-counter__text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.found-counter__hint-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.found-counter__hint-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }

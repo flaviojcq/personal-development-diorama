@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrthographicCamera, useTexture, Html, useGLTF, Center, useAnimations, Bvh } from '@react-three/drei';
+import { OrthographicCamera, useTexture, Html, useGLTF, Center, useAnimations, Bvh, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
 import lightParquetUrl from './assets/light_parquet.jpg';
 import darkParquetUrl from './assets/dark_parquet_3.jpg';
@@ -258,6 +258,9 @@ function WassilyChair({ position }: { position: [number, number, number] }) {
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
 
   const text = "Wassily Chair";
 
@@ -276,11 +279,21 @@ function WassilyChair({ position }: { position: [number, number, number] }) {
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   // Préparation des matériaux pour qu'ils puissent briller (glow)
@@ -305,6 +318,19 @@ function WassilyChair({ position }: { position: [number, number, number] }) {
   useFrame((state) => {
     if (!groupRef.current) return;
 
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
+
     // Flottement
     let targetY = position[1];
     if (hovered) {
@@ -318,7 +344,7 @@ function WassilyChair({ position }: { position: [number, number, number] }) {
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined) {
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.15);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.15);
         }
       }
     });
@@ -383,6 +409,9 @@ function RecordPlayer({ position, rotation }: { position: [number, number, numbe
   const { scene } = useGLTF(recordPLayerUrl);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
 
   const text = "Record Player";
 
@@ -400,11 +429,21 @@ function RecordPlayer({ position, rotation }: { position: [number, number, numbe
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -425,6 +464,19 @@ function RecordPlayer({ position, rotation }: { position: [number, number, numbe
 
   useFrame((state) => {
     if (!groupRef.current) return;
+
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
     const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
@@ -432,13 +484,13 @@ function RecordPlayer({ position, rotation }: { position: [number, number, numbe
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.1);
       }
     });
     if (lightRef.current) {
       if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
       else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
-      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, isHinting ? hintPulse * 3 : 0, 0.1);
     }
   });
 
@@ -479,6 +531,9 @@ function Orchid({ position, rotation }: { position: [number, number, number], ro
   const { scene } = useGLTF(orchidUrl);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
 
   const text = "Orchid";
 
@@ -496,11 +551,21 @@ function Orchid({ position, rotation }: { position: [number, number, number], ro
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -521,6 +586,19 @@ function Orchid({ position, rotation }: { position: [number, number, number], ro
 
   useFrame((state) => {
     if (!groupRef.current) return;
+
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
     const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
@@ -528,13 +606,13 @@ function Orchid({ position, rotation }: { position: [number, number, number], ro
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.1);
       }
     });
     if (lightRef.current) {
       if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
       else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
-      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, isHinting ? hintPulse * 3 : 0, 0.1);
     }
   });
 
@@ -574,6 +652,9 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
   const { scene } = useGLTF(pianoUrl);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
 
   const text = "Piano";
 
@@ -591,11 +672,21 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -616,6 +707,19 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
 
   useFrame((state) => {
     if (!groupRef.current) return;
+
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     let targetY = 0;
     if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.05 + 0.05;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
@@ -624,7 +728,7 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.15);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.15);
       }
     });
   });
@@ -732,6 +836,9 @@ function Dog({ position, rotation }: { position: [number, number, number], rotat
   const { scene } = useGLTF(dogUrl);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
 
   const text = "Dog";
 
@@ -749,11 +856,21 @@ function Dog({ position, rotation }: { position: [number, number, number], rotat
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -774,6 +891,19 @@ function Dog({ position, rotation }: { position: [number, number, number], rotat
 
   useFrame((state) => {
     if (!groupRef.current) return;
+
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
     const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
@@ -781,13 +911,13 @@ function Dog({ position, rotation }: { position: [number, number, number], rotat
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.1);
       }
     });
     if (lightRef.current) {
       if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
       else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
-      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, isHinting ? hintPulse * 3 : 0, 0.1);
     }
   });
 
@@ -827,6 +957,9 @@ function PS5GamingSetup({ position, rotation }: { position: [number, number, num
   const { scene } = useGLTF(ps5GamingSetupUrl);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
 
   const text = "PS5 Gaming Setup";
 
@@ -844,11 +977,21 @@ function PS5GamingSetup({ position, rotation }: { position: [number, number, num
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -869,6 +1012,19 @@ function PS5GamingSetup({ position, rotation }: { position: [number, number, num
 
   useFrame((state) => {
     if (!groupRef.current) return;
+
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     let targetY = 0;
     if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.05 + 0.05;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
@@ -877,7 +1033,7 @@ function PS5GamingSetup({ position, rotation }: { position: [number, number, num
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.15);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.15);
       }
     });
   });
@@ -938,6 +1094,9 @@ function AJ1Chicago({ position, rotation }: { position: [number, number, number]
   const { scene } = useGLTF(aj1Chicagourl);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
 
   const text = "Air Jordan 1 Chicago";
 
@@ -955,11 +1114,21 @@ function AJ1Chicago({ position, rotation }: { position: [number, number, number]
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -980,6 +1149,19 @@ function AJ1Chicago({ position, rotation }: { position: [number, number, number]
 
   useFrame((state) => {
     if (!groupRef.current) return;
+
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     let targetY = 0;
     if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.05 + 0.05;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
@@ -990,7 +1172,7 @@ function AJ1Chicago({ position, rotation }: { position: [number, number, number]
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.15);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.15);
       }
     });
   });
@@ -1054,6 +1236,9 @@ function Book({ position, rotation }: { position: [number, number, number], rota
   const { scene } = useGLTF(bookUrl);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
   const [showQuote, setShowQuote] = useState(false);
 
   const text = "The Creative Act";
@@ -1075,11 +1260,21 @@ function Book({ position, rotation }: { position: [number, number, number], rota
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -1101,6 +1296,19 @@ function Book({ position, rotation }: { position: [number, number, number], rota
   useFrame((state) => {
     if (!groupRef.current) return;
 
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
+
     // Flottement léger en idle (respiration douce), plus fort au survol
     const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
@@ -1111,7 +1319,7 @@ function Book({ position, rotation }: { position: [number, number, number], rota
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.1);
       }
     });
 
@@ -1204,6 +1412,10 @@ function LegoStarWarsATAT({ position, rotation }: { position: [number, number, n
   const lightRef = useRef<THREE.PointLight>(null);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
+
   const { scene, animations } = useGLTF(legoStarWarsATATUrl);
   const { actions } = useAnimations(animations, groupRef);
 
@@ -1223,11 +1435,21 @@ function LegoStarWarsATAT({ position, rotation }: { position: [number, number, n
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -1255,6 +1477,18 @@ function LegoStarWarsATAT({ position, rotation }: { position: [number, number, n
 
   useFrame((state) => {
     if (!groupRef.current) return;
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
 
@@ -1263,14 +1497,14 @@ function LegoStarWarsATAT({ position, rotation }: { position: [number, number, n
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.1);
       }
     });
 
     if (lightRef.current) {
       if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
       else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
-      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, isHinting ? hintPulse * 3 : 0, 0.1);
     }
   });
 
@@ -1326,6 +1560,9 @@ function DraftingTable({ position, rotation }: { position: [number, number, numb
   const lightRef = useRef<THREE.PointLight>(null);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
   const { scene } = useGLTF(draftingTableUrl);
 
   const text = "Drafting Table";
@@ -1344,11 +1581,21 @@ function DraftingTable({ position, rotation }: { position: [number, number, numb
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -1369,6 +1616,19 @@ function DraftingTable({ position, rotation }: { position: [number, number, numb
 
   useFrame((state) => {
     if (!groupRef.current) return;
+
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
 
@@ -1377,14 +1637,14 @@ function DraftingTable({ position, rotation }: { position: [number, number, numb
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.1);
       }
     });
 
     if (lightRef.current) {
       if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
       else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
-      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, isHinting ? hintPulse * 3 : 0, 0.1);
     }
   });
 
@@ -1442,6 +1702,9 @@ function LavaLamp({ position, rotation }: { position: [number, number, number], 
   const lightRef = useRef<THREE.PointLight>(null);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
   const { scene } = useGLTF(lavaLampUrl);
 
   const text = "Lava Lamp";
@@ -1460,11 +1723,21 @@ function LavaLamp({ position, rotation }: { position: [number, number, number], 
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -1485,6 +1758,19 @@ function LavaLamp({ position, rotation }: { position: [number, number, number], 
 
   useFrame((state) => {
     if (!groupRef.current) return;
+
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
 
@@ -1493,14 +1779,14 @@ function LavaLamp({ position, rotation }: { position: [number, number, number], 
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.1);
       }
     });
 
     if (lightRef.current) {
       if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
       else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
-      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, isHinting ? hintPulse * 3 : 0, 0.1);
     }
   });
 
@@ -1542,6 +1828,9 @@ function Jeep({ position, rotation }: { position: [number, number, number], rota
   const lightRef = useRef<THREE.PointLight>(null);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [found, setFound] = useState(false);
+  const [isHinting, setIsHinting] = useState(false);
+  const hintStartTime = useRef(0);
   const { scene } = useGLTF(jeepUrl);
 
   const text = "Jeep";
@@ -1560,11 +1849,21 @@ function Jeep({ position, rotation }: { position: [number, number, number], rota
     return () => window.removeEventListener('block-clicked', handleOtherClick);
   }, [text]);
 
+  useEffect(() => {
+    const handleHint = () => { if (!found) setIsHinting(true); };
+    window.addEventListener('hint-blink', handleHint);
+    return () => window.removeEventListener('hint-blink', handleHint);
+  }, [found]);
+
   const handleClick = (e: any) => {
     e.stopPropagation();
     const willBeClicked = !clicked;
     setClicked(willBeClicked);
     window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+    if (willBeClicked && !found) {
+      setFound(true);
+      window.dispatchEvent(new CustomEvent('object-discovered', { detail: text }));
+    }
   };
 
   useMemo(() => {
@@ -1585,6 +1884,19 @@ function Jeep({ position, rotation }: { position: [number, number, number], rota
 
   useFrame((state) => {
     if (!groupRef.current) return;
+
+    let hintPulse = 0;
+    if (isHinting) {
+      if (hintStartTime.current === 0) hintStartTime.current = state.clock.elapsedTime;
+      const t = state.clock.elapsedTime - hintStartTime.current;
+      if (t < 2.0) {
+        hintPulse = Math.abs(Math.sin(t * Math.PI * 2)) * 0.8;
+      } else {
+        setIsHinting(false);
+        hintStartTime.current = 0;
+      }
+    }
+  
     const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
 
@@ -1593,14 +1905,14 @@ function Jeep({ position, rotation }: { position: [number, number, number], rota
       if ((child as THREE.Mesh).isMesh) {
         const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
         if (mat && mat.emissiveIntensity !== undefined)
-          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow + hintPulse, 0.1);
       }
     });
 
     if (lightRef.current) {
       if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
       else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
-      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, isHinting ? hintPulse * 3 : 0, 0.1);
     }
   });
 
@@ -1872,7 +2184,7 @@ function Apartment() {
   );
 }
 
-function Player({ setZone }: { setZone: (z: ZoneType) => void }) {
+function Player({ setZone, active }: { setZone: (z: ZoneType) => void, active: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const keys = useKeyboard();
   const speed = 8;
@@ -1880,7 +2192,7 @@ function Player({ setZone }: { setZone: (z: ZoneType) => void }) {
   const camOffset = new THREE.Vector3(15, 15, 15);
 
   useFrame((_state, delta) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || !active) return;
 
     let dx = 0;
     let dz = 0;
@@ -1946,8 +2258,68 @@ function Player({ setZone }: { setZone: (z: ZoneType) => void }) {
 }
 
 // --- Main App Component ---
+function LoadingScreen({ onStarted }: { onStarted: () => void }) {
+  const { progress } = useProgress();
+  const [started, setStarted] = useState(false);
+
+  return (
+    <div className={`loading-screen ${started ? 'loading-screen--hidden' : ''}`}>
+      <div className="loading-screen__container">
+        <h1 className="loading-screen__title">My Personal Journey</h1>
+        {progress < 100 ? (
+          <div className="loading-screen__progress">
+            <div className="loading-screen__bar-container">
+              <div className="loading-screen__bar" style={{ width: `${progress}%` }}></div>
+            </div>
+            <p>Loading models... {Math.round(progress)}%</p>
+          </div>
+        ) : (
+          <div className="loading-screen__intro">
+            <p>Welcome to the vision of my past, present, and future self. Explore the rooms and find the clickable objects.</p>
+            <p className="loading-screen__hint">Can you find them all? (Hint: there are 4 per room)</p>
+            <button
+              className="loading-screen__button"
+              onClick={() => {
+                setStarted(true);
+                onStarted();
+              }}
+            >
+              Let's discover
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function FoundCounter() {
+  const [foundCount, setFoundCount] = useState(0);
+
+  useEffect(() => {
+    const handleDiscovered = () => setFoundCount(prev => prev + 1);
+    window.addEventListener('object-discovered', handleDiscovered);
+    return () => window.removeEventListener('object-discovered', handleDiscovered);
+  }, []);
+
+  const triggerHint = () => {
+    window.dispatchEvent(new CustomEvent('hint-blink'));
+  };
+
+  return (
+    <div className="found-counter">
+      <div className="found-counter__text">Objects Found: {foundCount} / 12</div>
+      <button className="found-counter__hint-btn" onClick={triggerHint}>
+        Need a hint?
+      </button>
+    </div>
+  );
+}
+
 function App() {
   const [zone, setZone] = useState<ZoneType>('none');
+  const [started, setStarted] = useState(false);
   const activeZoneData = ZONES.find(z => z.id === zone);
 
   return (
@@ -1990,9 +2362,12 @@ function App() {
 
         <Bvh firstHitOnly>
           <Apartment />
-          <Player setZone={setZone} />
+          <Player setZone={setZone} active={started} />
         </Bvh>
       </Canvas>
+      <LoadingScreen onStarted={() => setStarted(true)} />
+      {started && <FoundCounter />}
+
     </>
   );
 }
