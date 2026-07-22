@@ -34,6 +34,7 @@ import roundChairUrl from '../public/models/round_chair.glb?url';
 import legoStarWarsATATUrl from '../public/models/lego_star_wars_at_at.glb?url';
 import legoStarWarsIIIAATUrl from '../public/models/lego_star_wars_iii_aat.glb?url';
 import draftingTableUrl from '../public/models/drafting_table.glb?url';
+import meUrl from '../public/models/me.glb?url';
 import './index.css';
 
 // --- Types & Constants ---
@@ -2185,11 +2186,34 @@ function Apartment() {
 }
 
 function Player({ setZone, active }: { setZone: (z: ZoneType) => void, active: boolean }) {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<THREE.Group>(null);
   const keys = useKeyboard();
   const speed = 8;
   const { camera } = useThree();
   const camOffset = new THREE.Vector3(15, 15, 15);
+  
+  const { scene, animations } = useGLTF(meUrl);
+  const { actions } = useAnimations(animations, meshRef);
+  
+  const [action, setAction] = useState('HumanArmature|Man_Idle');
+  
+  useEffect(() => {
+    if (actions && actions[action]) {
+      actions[action].reset().fadeIn(0.2).play();
+      return () => {
+        actions[action]?.fadeOut(0.2);
+      };
+    }
+  }, [action, actions]);
+
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  }, [scene]);
 
   useFrame((_state, delta) => {
     if (!meshRef.current || !active) return;
@@ -2201,8 +2225,8 @@ function Player({ setZone, active }: { setZone: (z: ZoneType) => void, active: b
     if (keys['a'] || keys['ArrowLeft']) { dx -= 1; dz += 1; }
     if (keys['d'] || keys['ArrowRight']) { dx += 1; dz -= 1; }
 
-    if (dx !== 0 && dz !== 0) {
-      const len = Math.sqrt(dx * dx + dz * dz);
+    const len = Math.sqrt(dx * dx + dz * dz);
+    if (len > 0) {
       dx /= len;
       dz /= len;
     }
@@ -2218,6 +2242,15 @@ function Player({ setZone, active }: { setZone: (z: ZoneType) => void, active: b
         meshRef.current.position.z += moveZ;
       }
 
+      // Calculate rotation
+      const angle = Math.atan2(dx, dz);
+      let diff = angle - meshRef.current.rotation.y;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      meshRef.current.rotation.y += diff * 10 * delta;
+
+      if (action !== 'HumanArmature|Man_Walk') setAction('HumanArmature|Man_Walk');
+
       let activeZone: ZoneType = 'none';
       for (const zone of ZONES) {
         if (zone.type === 'circle') {
@@ -2230,15 +2263,17 @@ function Player({ setZone, active }: { setZone: (z: ZoneType) => void, active: b
             break;
           }
         } else if (zone.type === 'square') {
-          const dx = Math.abs(meshRef.current.position.x - zone.x);
-          const dz = Math.abs(meshRef.current.position.z - zone.z);
-          if (dx <= zone.size && dz <= zone.size) {
+          const dxDist = Math.abs(meshRef.current.position.x - zone.x);
+          const dzDist = Math.abs(meshRef.current.position.z - zone.z);
+          if (dxDist <= zone.size && dzDist <= zone.size) {
             activeZone = zone.id as ZoneType;
             break;
           }
         }
       }
       setZone(activeZone);
+    } else {
+      if (action !== 'HumanArmature|Man_Idle') setAction('HumanArmature|Man_Idle');
     }
 
     camera.position.set(
@@ -2250,13 +2285,13 @@ function Player({ setZone, active }: { setZone: (z: ZoneType) => void, active: b
   });
 
   return (
-    <mesh ref={meshRef} position={[0, 0.8, 0]} castShadow>
-      <boxGeometry args={[0.8, 1.6, 0.8]} />
-      <meshStandardMaterial color="#38bdf8" />
-    </mesh>
+    <group ref={meshRef} position={[0, 0, 0]}>
+      <primitive object={scene} scale={1.0} />
+    </group>
   );
 }
 
+// --- Main App Component ---
 // --- Main App Component ---
 function LoadingScreen({ onStarted }: { onStarted: () => void }) {
   const { progress } = useProgress();
