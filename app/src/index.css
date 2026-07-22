@@ -4,12 +4,15 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   width: 100%;
   height: 100%;
   overflow: hidden;
   font-family: 'Outfit', sans-serif;
-  background-color: #fcecdb; /* Soft warm background for the empty space */
+  background-color: #fcecdb;
+  /* Soft warm background for the empty space */
 }
 
 /* UI Overlay */
@@ -36,8 +39,8 @@ html, body, #root {
   border: 1px solid rgba(255, 180, 100, 0.2);
   padding: 2rem;
   border-radius: 16px;
-  width: 90vw;
-  max-width: 900px;
+  width: 95vw;
+  max-width: 1000px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   text-align: center;
 }
@@ -54,10 +57,29 @@ html, body, #root {
   color: #e2e8f0;
 }
 
-.theme-me h2 { background: linear-gradient(to right, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
-.theme-past h2 { background: linear-gradient(to right, #a78bfa, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
-.theme-present h2 { background: linear-gradient(to right, #34d399, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
-.theme-future h2 { background: linear-gradient(to right, #38bdf8, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
+.theme-me h2 {
+  background: linear-gradient(to right, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.theme-past h2 {
+  background: linear-gradient(to right, #a78bfa, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.theme-present h2 {
+  background: linear-gradient(to right, #34d399, #10b981);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.theme-future h2 {
+  background: linear-gradient(to right, #38bdf8, #0ea5e9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
 .instructions {
   position: absolute;
@@ -90,8 +112,15 @@ canvas {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .popup-card {
@@ -135,7 +164,35 @@ canvas {
 }
 
 .popup-section p {
-  font-size: 0.95rem;
   line-height: 1.5;
-  color: #f1f5f9;
+  opacity: 0.9;
+}
+
+.quote-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.quote-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.popup-quote {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid #edc24b;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  animation: fadeIn 0.3s ease;
 }

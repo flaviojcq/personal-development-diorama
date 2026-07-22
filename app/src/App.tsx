@@ -40,10 +40,10 @@ import './index.css';
 type ZoneType = 'none' | 'me' | 'past' | 'present' | 'future';
 
 const ZONES = [
-  { id: 'me', type: 'circle', x: 0, z: 0, size: 6.0, title: 'ME (Central Me)', text: "The starting point and central axis. Choose your path to explore your narrative.", theme: 'theme-me' },
+  { id: 'me', type: 'circle', x: 0, z: 0, size: 6.0, title: 'ME (Central Me)', text: "Welcome to the core of my journey. This central space connects who I was, who I am, and who I aspire to be. Choose a path to explore the passions, values, and experiences that shape my story.", theme: 'theme-me' },
   { id: 'past', type: 'square', x: -20, z: 0, size: 7.0, title: 'Who I Was', text: "Welcome to the room representing my past. It embodies my childhood and teenage years. Through the objects in this room, discover my passions from that time and how they shaped my core values.", theme: 'theme-past' },
-  { id: 'present', type: 'square', x: -20, z: -20, size: 7.0, title: 'Who I Am', text: "A modern studio defining your current identity: sneakers, synth setup, and gaming.", theme: 'theme-present' },
-  { id: 'future', type: 'square', x: 0, z: -20, size: 7.0, title: 'Who I Will Be', text: "Future aspirations and growth: vertical gardens, coffee mastery, and acoustic peace.", theme: 'theme-future' },
+  { id: 'present', type: 'square', x: -20, z: -20, size: 7.0, title: 'Who I Am', text: "Welcome to the room representing who I am today. It highlights the passions I am currently developing and holding closest to my heart, reflecting how they actively shape the person I am right now.", theme: 'theme-present' },
+  { id: 'future', type: 'square', x: 0, z: -20, size: 7.0, title: 'Who I Will Be', text: "This room is designed to represent the version of myself I aspire to become / bringing more calmness and color into my life, while taking care never to lose touch with the person I am today and the person I used to be.", theme: 'theme-future' },
 ];
 
 const BUILD_AREAS = [
@@ -259,7 +259,12 @@ function WassilyChair({ position }: { position: [number, number, number] }) {
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
 
-  const text = "My favorite reading chair";
+  const text = "Wassily Chair";
+
+  const popupData = {
+    affect: "This aligns perfectly with my passion for design and beautiful objects. I'm fascinated by this kind of design piece, especially their history and the impact they've had on our vision of interiors. Despite the often high prices, I'd love to start a collection of designer furniture and chairs in this style.",
+    valueText: "Appreciation of Art & History. It reflects my ambition to surround myself with objects that have a story and a strong cultural significance, blending everyday life with artistic legacy."
+  };
 
   // Se ferme si un autre objet est cliqué
   useEffect(() => {
@@ -321,21 +326,31 @@ function WassilyChair({ position }: { position: [number, number, number] }) {
 
   return (
     <group
-      ref={groupRef}
       position={position}
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
       onClick={handleClick}
     >
-      <primitive object={scene} scale={0.08} />
-
-      {/* Lumière d'ambiance douce sur le sol autour de la chaise */}
-      <pointLight position={[0, 0.5, 0]} distance={5} intensity={clicked ? 1 : (hovered ? 0.5 : 0)} color="#fef08a" />
+      <group ref={groupRef}>
+        <primitive object={scene} scale={0.08} />
+        {/* Lumière d'ambiance douce sur le sol autour de la chaise */}
+        <pointLight position={[0, 0.5, 0]} distance={5} intensity={clicked ? 1 : (hovered ? 0.5 : 0)} color="#fef08a" />
+      </group>
 
       {/* Texte au clic */}
       {clicked && (
-        <Html position={[0, 3, 0]} center zIndexRange={[100, 0]}>
-          <div className="clickable-text">{text}</div>
+        <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#fef08a' }}>{text}</h3>
+            <div className="popup-section">
+              <h4>Personal Connection</h4>
+              <p>{popupData.affect}</p>
+            </div>
+            <div className="popup-section">
+              <h4>Core Value & Story</h4>
+              <p>{popupData.valueText}</p>
+            </div>
+          </div>
         </Html>
       )}
     </group>
@@ -363,23 +378,195 @@ function Drawer({ position, rotation }: { position: [number, number, number], ro
 }
 
 function RecordPlayer({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
   const { scene } = useGLTF(recordPLayerUrl);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+  const text = "Record Player";
+
+  const popupData = {
+    affect: "This is deeply connected to my passion for music. I already have a record player and a small collection of vinyls with my favorite albums, but I want to continue this in the future to deepen my musical knowledge and listen to music actively rather than passively on streaming platforms.",
+    valueText: "Intentionality & Appreciation. It symbolizes a desire to slow down, be present, and truly appreciate art, turning everyday listening into a meaningful experience."
+  };
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
   useMemo(() => {
     scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#22c55e");
+          mat.emissiveIntensity = 0;
+        }
+      }
     });
   }, [scene]);
-  return <primitive object={scene} position={position} rotation={rotation} scale={0.001} />;
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
+    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+      }
+    });
+    if (lightRef.current) {
+      if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
+      else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+    }
+  });
+
+  return (
+    <group
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <group ref={groupRef}>
+        <primitive object={scene} scale={0.001} />
+        <pointLight ref={lightRef} position={[0, 1, 0]} distance={5} intensity={0} color="#22c55e" />
+      </group>
+      {clicked && (
+        <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#22c55e' }}>{text}</h3>
+            <div className="popup-section">
+              <h4>Personal Connection</h4>
+              <p>{popupData.affect}</p>
+            </div>
+            <div className="popup-section">
+              <h4>Core Value & Story</h4>
+              <p>{popupData.valueText}</p>
+            </div>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
 }
 
 function Orchid({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
   const { scene } = useGLTF(orchidUrl);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+  const text = "Orchid";
+
+  const popupData = {
+    affect: "I've always loved this plant. My grandmother always had one at her place, and my mother always has one at home too. It ties into my vision for the future, where I'd love to connect more with nature and plants.",
+    valueText: "Connection to Nature & Family. It represents a living link to my family's habits and a desire for a peaceful, grounded environment in my future home."
+  };
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
   useMemo(() => {
     scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#f472b6");
+          mat.emissiveIntensity = 0;
+        }
+      }
     });
   }, [scene]);
-  return <primitive object={scene} position={position} rotation={rotation} scale={0.15} />;
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
+    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+      }
+    });
+    if (lightRef.current) {
+      if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
+      else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+    }
+  });
+
+  return (
+    <group
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <group ref={groupRef}>
+        <primitive object={scene} scale={0.15} />
+        <pointLight ref={lightRef} position={[0, 1, 0]} distance={5} intensity={0} color="#f472b6" />
+      </group>
+      {clicked && (
+        <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#f472b6' }}>{text}</h3>
+            <div className="popup-section">
+              <h4>Personal Connection</h4>
+              <p>{popupData.affect}</p>
+            </div>
+            <div className="popup-section">
+              <h4>Core Value & Story</h4>
+              <p>{popupData.valueText}</p>
+            </div>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
 }
 
 function Piano({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
@@ -388,7 +575,12 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
 
-  const text = "My dream piano 🎹";
+  const text = "Piano";
+
+  const popupData = {
+    affect: "I wanted to learn the piano because I find it to be one of the most beautiful instruments, and it's so accessible with lessons on YouTube.",
+    valueText: "Continuous Learning & Art. It directly connects to my constant desire to learn new things and my deep passion for music. It shows that with dedication, you can teach yourself almost anything."
+  };
 
   useEffect(() => {
     const handleOtherClick = (e: Event) => {
@@ -424,7 +616,7 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
 
   useFrame((state) => {
     if (!groupRef.current) return;
-    let targetY = position[1];
+    let targetY = 0;
     if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.05 + 0.05;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
     const targetGlow = clicked ? 0.6 : (hovered ? 0.3 : 0);
@@ -439,20 +631,31 @@ function Piano({ position, rotation }: { position: [number, number, number], rot
 
   return (
     <group
-      ref={groupRef}
       position={position}
       rotation={rotation}
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
       onClick={handleClick}
     >
-      <Center bottom>
-        <primitive object={scene} scale={0.00003} />
-      </Center>
-      <pointLight position={[0, 1, 0]} distance={5} intensity={clicked ? 1.0 : (hovered ? 0.5 : 0)} color="#c084fc" />
+      <group ref={groupRef}>
+        <Center bottom>
+          <primitive object={scene} scale={0.00003} />
+        </Center>
+        <pointLight position={[0, 1, 0]} distance={5} intensity={clicked ? 1.0 : (hovered ? 0.5 : 0)} color="#c084fc" />
+      </group>
       {clicked && (
-        <Html position={[0, 4, 0]} center zIndexRange={[100, 0]}>
-          <div className="clickable-text">{text}</div>
+        <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#c084fc' }}>{text}</h3>
+            <div className="popup-section">
+              <h4>Personal Connection</h4>
+              <p>{popupData.affect}</p>
+            </div>
+            <div className="popup-section">
+              <h4>Core Value & Story</h4>
+              <p>{popupData.valueText}</p>
+            </div>
+          </div>
         </Html>
       )}
     </group>
@@ -524,13 +727,99 @@ function Cat({ position, rotation }: { position: [number, number, number], rotat
 }
 
 function Dog({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
   const { scene } = useGLTF(dogUrl);
+  const [hovered, setHovered] = useState(false);
+  const [clicked, setClicked] = useState(false);
+
+  const text = "Dog";
+
+  const popupData = {
+    affect: "I've had a dog in my life since I was little. My family always had Boxers, and I can't imagine my future without a dog as affectionate as that breed. My dream dog is a Basset Hound, but I think I'll first look into adopting a rescue dog.",
+    valueText: "Empathy & Companionship. This lifelong passion for animals is something I hope to continue. It reminds me to keep learning about them while always treating them with the utmost respect."
+  };
+
+  useEffect(() => {
+    const handleOtherClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== text) setClicked(false);
+    };
+    window.addEventListener('block-clicked', handleOtherClick);
+    return () => window.removeEventListener('block-clicked', handleOtherClick);
+  }, [text]);
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const willBeClicked = !clicked;
+    setClicked(willBeClicked);
+    window.dispatchEvent(new CustomEvent('block-clicked', { detail: willBeClicked ? text : null }));
+  };
+
   useMemo(() => {
     scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) { child.castShadow = true; child.receiveShadow = true; }
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          mesh.material = (mesh.material as THREE.Material).clone();
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.emissive = new THREE.Color("#f97316");
+          mat.emissiveIntensity = 0;
+        }
+      }
     });
   }, [scene]);
-  return <primitive object={scene} position={position} rotation={rotation} scale={2.2} />;
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
+    const targetGlow = clicked ? 0.7 : (hovered ? 0.4 : 0);
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mat = (child as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        if (mat && mat.emissiveIntensity !== undefined)
+          mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetGlow, 0.1);
+      }
+    });
+    if (lightRef.current) {
+      if (clicked) lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 1.5, 0.1);
+      else if (hovered) lightRef.current.intensity = 0.6 + Math.sin(state.clock.elapsedTime * 8) * 0.2;
+      else lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.1);
+    }
+  });
+
+  return (
+    <group
+      position={position}
+      rotation={rotation}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
+      onClick={handleClick}
+    >
+      <group ref={groupRef}>
+        <primitive object={scene} scale={2.2} />
+        <pointLight ref={lightRef} position={[0, 1, 0]} distance={5} intensity={0} color="#f97316" />
+      </group>
+      {clicked && (
+        <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#f97316' }}>{text}</h3>
+            <div className="popup-section">
+              <h4>Personal Connection</h4>
+              <p>{popupData.affect}</p>
+            </div>
+            <div className="popup-section">
+              <h4>Core Value & Story</h4>
+              <p>{popupData.valueText}</p>
+            </div>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
 }
 
 function PS5GamingSetup({ position, rotation }: { position: [number, number, number], rotation?: [number, number, number] }) {
@@ -539,7 +828,12 @@ function PS5GamingSetup({ position, rotation }: { position: [number, number, num
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
 
-  const text = "My PS5 gaming setup 🎮";
+  const text = "PS5 Gaming Setup";
+
+  const popupData = {
+    affect: "I've always loved playing video games, starting around age 6 or 7 with games like Mario Kart and LEGO Star Wars, leading up to highly competitive games today like Rainbow 6 Siege, which I often play with my childhood friend.",
+    valueText: "Challenge & Self-Reflection. Competitive gaming demands constant self-reflection and continuous improvement. It pushes me to analyze my mistakes and always strive to get better, a mindset that translates to real life."
+  };
 
   useEffect(() => {
     const handleOtherClick = (e: Event) => {
@@ -575,7 +869,7 @@ function PS5GamingSetup({ position, rotation }: { position: [number, number, num
 
   useFrame((state) => {
     if (!groupRef.current) return;
-    let targetY = position[1];
+    let targetY = 0;
     if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.05 + 0.05;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
     const targetGlow = clicked ? 0.5 : (hovered ? 0.25 : 0);
@@ -590,18 +884,29 @@ function PS5GamingSetup({ position, rotation }: { position: [number, number, num
 
   return (
     <group
-      ref={groupRef}
       position={position}
       rotation={rotation}
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
       onClick={handleClick}
     >
-      <primitive object={scene} scale={0.6} />
-      <pointLight position={[0, 1, 0]} distance={5} intensity={clicked ? 1.0 : (hovered ? 0.5 : 0)} color="#38bdf8" />
+      <group ref={groupRef}>
+        <primitive object={scene} scale={0.6} />
+        <pointLight position={[0, 1, 0]} distance={5} intensity={clicked ? 1.0 : (hovered ? 0.5 : 0)} color="#38bdf8" />
+      </group>
       {clicked && (
-        <Html position={[0, 3, 0]} center zIndexRange={[100, 0]}>
-          <div className="clickable-text">{text}</div>
+        <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#38bdf8' }}>{text}</h3>
+            <div className="popup-section">
+              <h4>Personal Connection</h4>
+              <p>{popupData.affect}</p>
+            </div>
+            <div className="popup-section">
+              <h4>Core Value & Story</h4>
+              <p>{popupData.valueText}</p>
+            </div>
+          </div>
         </Html>
       )}
     </group>
@@ -634,7 +939,12 @@ function AJ1Chicago({ position, rotation }: { position: [number, number, number]
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
 
-  const text = "Air Jordan 1 Chicago — the grail 🐂";
+  const text = "Air Jordan 1 Chicago";
+
+  const popupData = {
+    affect: "This is undoubtedly my favorite pair of shoes, whether for the history behind this model and colorway, or simply because I dreamed of owning them as a teenager. They are part of my collection of about 30 pairs and truly represent several facets of who I am: design, sports, and collecting.",
+    valueText: "Passion & Identity. Sneaker culture is a bridge between art, history, and personal expression. This pair reminds me that what we collect is often a reflection of what inspires us."
+  };
 
   useEffect(() => {
     const handleOtherClick = (e: Event) => {
@@ -670,7 +980,7 @@ function AJ1Chicago({ position, rotation }: { position: [number, number, number]
 
   useFrame((state) => {
     if (!groupRef.current) return;
-    let targetY = position[1];
+    let targetY = 0;
     if (hovered) targetY += Math.sin(state.clock.elapsedTime * 5) * 0.05 + 0.05;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.2);
     // Slow rotation on hover for the sneaker showcase effect
@@ -687,20 +997,31 @@ function AJ1Chicago({ position, rotation }: { position: [number, number, number]
 
   return (
     <group
-      ref={groupRef}
       position={position}
       rotation={rotation}
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
       onClick={handleClick}
     >
-      <Center>
-        <primitive object={scene} scale={4.5} />
-      </Center>
-      <pointLight position={[0, 0.5, 0]} distance={4} intensity={clicked ? 1.2 : (hovered ? 0.6 : 0)} color="#ef4444" />
+      <group ref={groupRef}>
+        <Center>
+          <primitive object={scene} scale={4.5} />
+        </Center>
+        <pointLight position={[0, 0.5, 0]} distance={4} intensity={clicked ? 1.2 : (hovered ? 0.6 : 0)} color="#ef4444" />
+      </group>
       {clicked && (
-        <Html position={[0, 1.5, 0]} center zIndexRange={[100, 0]}>
-          <div className="clickable-text">{text}</div>
+        <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#ef4444' }}>{text}</h3>
+            <div className="popup-section">
+              <h4>Personal Connection</h4>
+              <p>{popupData.affect}</p>
+            </div>
+            <div className="popup-section">
+              <h4>Core Value & Story</h4>
+              <p>{popupData.valueText}</p>
+            </div>
+          </div>
         </Html>
       )}
     </group>
@@ -733,13 +1054,22 @@ function Book({ position, rotation }: { position: [number, number, number], rota
   const { scene } = useGLTF(bookUrl);
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const [showQuote, setShowQuote] = useState(false);
 
-  const text = "Currently reading: Atomic Habits 📖";
+  const text = "The Creative Act";
+
+  const popupData = {
+    affect: "This is 'The Creative Act: A Way of Being' by Rick Rubin. I was never a big reader, but after learning about his life and his incredible contributions to music, I decided to dive into it.",
+    valueText: "Curiosity & Open-Mindedness. It represents my willingness to step out of my comfort zone. Exploring new perspectives, even through mediums I usually avoid, can profoundly change how I view the creative process."
+  };
 
   useEffect(() => {
     const handleOtherClick = (e: Event) => {
       const customEvent = e as CustomEvent;
-      if (customEvent.detail !== text) setClicked(false);
+      if (customEvent.detail !== text) {
+        setClicked(false);
+        setShowQuote(false);
+      }
     };
     window.addEventListener('block-clicked', handleOtherClick);
     return () => window.removeEventListener('block-clicked', handleOtherClick);
@@ -772,7 +1102,7 @@ function Book({ position, rotation }: { position: [number, number, number], rota
     if (!groupRef.current) return;
 
     // Flottement léger en idle (respiration douce), plus fort au survol
-    const targetY = hovered ? position[1] + Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : position[1];
+    const targetY = hovered ? Math.sin(state.clock.elapsedTime * 5) * 0.04 + 0.06 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
 
     // Emissive : toujours allumé légèrement, plus fort au survol/clic
@@ -802,28 +1132,51 @@ function Book({ position, rotation }: { position: [number, number, number], rota
 
   return (
     <group
-      ref={groupRef}
       position={position}
       rotation={rotation}
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
       onPointerOut={() => { setHovered(false); document.body.style.cursor = 'auto'; }}
       onClick={handleClick}
     >
-      <primitive object={scene} scale={1} />
-
-      {/* Halo permanent avec pulsation */}
-      <pointLight
-        ref={lightRef}
-        position={[0, 0.3, 0]}
-        color="#edc24bff"
-        intensity={0.2}
-        distance={3}
-        decay={2}
-      />
+      <group ref={groupRef}>
+        <primitive object={scene} scale={1} />
+        {/* Halo permanent avec pulsation */}
+        <pointLight
+          ref={lightRef}
+          position={[0, 0.3, 0]}
+          color="#edc24b"
+          intensity={0.2}
+          distance={3}
+          decay={2}
+        />
+      </group>
 
       {clicked && (
-        <Html position={[0, 1.2, 0]} center zIndexRange={[100, 0]}>
-          <div className="clickable-text">{text}</div>
+        <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#edc24b' }}>{text}</h3>
+            <div className="popup-section">
+              <h4>Personal Connection</h4>
+              <p>{popupData.affect}</p>
+            </div>
+            <div className="popup-section">
+              <h4>Core Value & Story</h4>
+              <p>{popupData.valueText}</p>
+            </div>
+            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+              <button
+                className="quote-button"
+                onClick={(e) => { e.stopPropagation(); setShowQuote(!showQuote); }}
+              >
+                {showQuote ? 'Hide Favorite Quote' : 'Show Favorite Quote'}
+              </button>
+            </div>
+            {showQuote && (
+              <div className="popup-quote">
+                "Think of the outside world, for example, as a conveyor belt with a continuous stream of small packages passing by you. The first step is to notice the conveyor belt is there. Then, whenever you feel like it, you can grab a package, unwrap it, and see what's inside."
+              </div>
+            )}
+          </div>
         </Html>
       )}
     </group>
@@ -935,7 +1288,7 @@ function LegoStarWarsATAT({ position, rotation }: { position: [number, number, n
       </group>
       {clicked && (
         <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
-          <div className="popup-card">
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ color: '#ffffff' }}>{text}</h3>
             <div className="popup-section">
               <h4>Personal Connection</h4>
@@ -1051,7 +1404,7 @@ function DraftingTable({ position, rotation }: { position: [number, number, numb
       </group>
       {clicked && (
         <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
-          <div className="popup-card">
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ color: '#fbcfe8' }}>{text}</h3>
             <div className="popup-section">
               <h4>Personal Connection</h4>
@@ -1167,7 +1520,7 @@ function LavaLamp({ position, rotation }: { position: [number, number, number], 
       </group>
       {clicked && (
         <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
-          <div className="popup-card">
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ color: '#ef4444' }}>{text}</h3>
             <div className="popup-section">
               <h4>Personal Connection</h4>
@@ -1267,7 +1620,7 @@ function Jeep({ position, rotation }: { position: [number, number, number], rota
       </group>
       {clicked && (
         <Html position={[0, 4.5, 0]} center zIndexRange={[100, 0]}>
-          <div className="popup-card">
+          <div className="popup-card" onPointerOver={(e) => e.stopPropagation()} onPointerOut={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ color: '#22c55e' }}>{text}</h3>
             <div className="popup-section">
               <h4>Personal Connection</h4>
@@ -1645,3 +1998,4 @@ function App() {
 }
 
 export default App;
+
